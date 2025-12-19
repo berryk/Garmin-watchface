@@ -32,7 +32,6 @@ jobs:
           - vivoactive5
           - vivoactive4
           - epix2
-          - lily2
       fail-fast: false  # Continue building other devices if one fails
     
     steps:
@@ -59,19 +58,20 @@ jobs:
           mkdir -p ~/.Garmin/ConnectIQ/Sdks
           mkdir -p ~/.Garmin/ConnectIQ/Devices
           
-          # Download SDK (using a known working version)
-          SDK_URL="https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-lin-7.3.1-2024-06-06-7e1acd876.zip"
+          # Download SDK bundle from our GitHub release
+          SDK_URL="https://github.com/berryk/Garmin-watchface/releases/download/sdk-v8.4.0/connectiq-sdk-bundle.zip"
           
-          echo "Downloading Connect IQ SDK..."
-          wget -q "$SDK_URL" -O /tmp/sdk.zip || {
-            echo "Failed to download SDK. Trying alternative URL..."
-            # Try alternative/older version
-            wget -q "https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-lin-4.2.4-2023-10-18-dccd8f56f.zip" -O /tmp/sdk.zip
-          }
+          echo "Downloading Connect IQ SDK bundle..."
+          wget -q "$SDK_URL" -O /tmp/sdk.zip
           
           echo "Extracting SDK..."
           unzip -q /tmp/sdk.zip -d ~/.Garmin/ConnectIQ/Sdks/sdk
           rm /tmp/sdk.zip
+          
+          # Move device files to correct location
+          if [ -d ~/.Garmin/ConnectIQ/Sdks/sdk/Devices ]; then
+            mv ~/.Garmin/ConnectIQ/Sdks/sdk/Devices/* ~/.Garmin/ConnectIQ/Devices/ 2>/dev/null || true
+          fi
           
           # Set SDK path
           echo "CONNECTIQ_SDK=$HOME/.Garmin/ConnectIQ/Sdks/sdk" >> $GITHUB_ENV
@@ -81,20 +81,7 @@ jobs:
           
           echo "SDK installed to: $HOME/.Garmin/ConnectIQ/Sdks/sdk"
           ls -la ~/.Garmin/ConnectIQ/Sdks/sdk/bin/ || echo "bin directory not found"
-
-      - name: Download Device Files
-        run: |
-          DEVICE="${{ matrix.device }}"
-          DEVICE_URL="https://developer.garmin.com/downloads/connect-iq/devices/${DEVICE}.zip"
-          
-          echo "Downloading device files for: $DEVICE"
-          mkdir -p ~/.Garmin/ConnectIQ/Devices/$DEVICE
-          
-          wget -q "$DEVICE_URL" -O /tmp/device.zip 2>/dev/null && {
-            unzip -q /tmp/device.zip -d ~/.Garmin/ConnectIQ/Devices/$DEVICE
-            rm /tmp/device.zip
-            echo "Device files installed for: $DEVICE"
-          } || echo "Device files may be bundled with SDK or not available separately"
+          ls -la ~/.Garmin/ConnectIQ/Devices/ || echo "No devices found"
 
       - name: Generate Developer Key
         run: |
