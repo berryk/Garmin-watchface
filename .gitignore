@@ -1,5 +1,14 @@
 # Garmin Connect IQ Build Artifacts
 bin/
+
+# Developer keys (should not be in repo)
+developer_key.pem
+developer_key.der
+developer_key.p12
+developer_key.keystore
+developer_key_temp.pem
+*.pem
+*.der
 *.prg
 
 # Developer Key (keep private!)

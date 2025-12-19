@@ -1,0 +1,162 @@
+# GitHub Actions workflow for building GMT World Time Watchface
+# Builds for multiple Garmin Connect IQ devices
+
+name: Build Garmin Watchface
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  SDK_VERSION: "8.4.0-2025-12-03-5122605dc"
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        device: 
+          - fenix7
+          - fenix5
+          - venu
+          - venu2
+          - venu3
+          - venu441mm
+          - venu445mm
+          - venux1
+          - venusq2
+          - fr965
+          - fr255
+          - fr245
+          - vivoactive5
+          - vivoactive4
+          - epix2
+          - lily2
+      fail-fast: false  # Continue building other devices if one fails
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Cache Connect IQ SDK
+        id: cache-sdk
+        uses: actions/cache@v4
+        with:
+          path: ~/connectiq-sdk
+          key: connectiq-sdk-${{ env.SDK_VERSION }}
+
+      - name: Download Connect IQ SDK
+        if: steps.cache-sdk.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/connectiq-sdk
+          cd ~/connectiq-sdk
+          # Download SDK from Garmin
+          wget -q "https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-lin-${{ env.SDK_VERSION }}.zip" -O sdk.zip || \
+          wget -q "https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-linux-${{ env.SDK_VERSION }}.zip" -O sdk.zip
+          unzip -q sdk.zip
+          rm sdk.zip
+          # Make monkeyc executable
+          chmod +x bin/monkeyc
+
+      - name: Download device files
+        run: |
+          # Device files are needed for compilation
+          mkdir -p ~/.Garmin/ConnectIQ/Devices
+          cd ~/.Garmin/ConnectIQ/Devices
+          # Download device package for the specific device
+          wget -q "https://developer.garmin.com/downloads/connect-iq/devices/${{ matrix.device }}.zip" -O device.zip 2>/dev/null || echo "Device file may be bundled with SDK"
+          if [ -f device.zip ]; then
+            unzip -q device.zip
+            rm device.zip
+          fi
+
+      - name: Generate developer key
+        run: |
+          # Generate a developer key for building (CI-only, not for distribution)
+          openssl genrsa -out developer_key.pem 4096
+          # Convert to DER format
+          openssl pkcs8 -topk8 -inform PEM -outform DER -in developer_key.pem -out developer_key.der -nocrypt
+
+      - name: Build for ${{ matrix.device }}
+        run: |
+          SDK_PATH=~/connectiq-sdk
+          
+          # Build using monkeybrains.jar directly
+          java -jar "$SDK_PATH/bin/monkeybrains.jar" \
+            -o "bin/GMTWorldTime-${{ matrix.device }}.prg" \
+            -f monkey.jungle \
+            -d ${{ matrix.device }} \
+            -y developer_key.der \
+            -w
+          
+          # Check if build succeeded
+          if [ -f "bin/GMTWorldTime-${{ matrix.device }}.prg" ]; then
+            echo "✅ Build successful for ${{ matrix.device }}"
+            ls -la bin/
+          else
+            echo "❌ Build failed for ${{ matrix.device }}"
+            exit 1
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GMTWorldTime-${{ matrix.device }}
+          path: bin/GMTWorldTime-${{ matrix.device }}.prg
+          retention-days: 30
+
+  # Combine all builds into a single release artifact
+  combine-builds:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: builds/
+          pattern: GMTWorldTime-*
+          merge-multiple: true
+
+      - name: Create combined artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GMTWorldTime-all-devices
+          path: builds/
+          retention-days: 90
+
+  # Create a release on tags
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: builds/
+          pattern: GMTWorldTime-*
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: builds/*.prg
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
