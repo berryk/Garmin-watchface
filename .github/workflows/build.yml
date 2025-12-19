@@ -55,18 +55,18 @@ jobs:
       - name: Download and Setup Connect IQ SDK
         run: |
           # Create directories
-          mkdir -p ~/.Garmin/ConnectIQ/Sdks
+          mkdir -p ~/.Garmin/ConnectIQ/Sdks/sdk
           mkdir -p ~/.Garmin/ConnectIQ/Devices
           
-          # Download SDK bundle from our GitHub release
-          SDK_URL="https://github.com/berryk/Garmin-watchface/releases/download/sdk-v8.4.0/connectiq-sdk-bundle.zip"
+          # Download SDK bundle from our GitHub release (tar.gz for Linux compatibility)
+          SDK_URL="https://github.com/berryk/Garmin-watchface/releases/download/sdk-v8.4.0-linux/connectiq-sdk-linux-bundle.tar.gz"
           
-          echo "Downloading Connect IQ SDK bundle..."
-          wget -q "$SDK_URL" -O /tmp/sdk.zip
+          echo "Downloading Connect IQ SDK bundle (154MB with 162 devices)..."
+          wget -q "$SDK_URL" -O /tmp/sdk.tar.gz
           
           echo "Extracting SDK..."
-          unzip -q /tmp/sdk.zip -d ~/.Garmin/ConnectIQ/Sdks/sdk
-          rm /tmp/sdk.zip
+          tar -xzf /tmp/sdk.tar.gz -C ~/.Garmin/ConnectIQ/Sdks/sdk
+          rm /tmp/sdk.tar.gz
           
           # Move device files to correct location
           if [ -d ~/.Garmin/ConnectIQ/Sdks/sdk/Devices ]; then
@@ -80,8 +80,8 @@ jobs:
           chmod +x ~/.Garmin/ConnectIQ/Sdks/sdk/bin/* 2>/dev/null || true
           
           echo "SDK installed to: $HOME/.Garmin/ConnectIQ/Sdks/sdk"
-          ls -la ~/.Garmin/ConnectIQ/Sdks/sdk/bin/ || echo "bin directory not found"
-          ls -la ~/.Garmin/ConnectIQ/Devices/ || echo "No devices found"
+          ls -la ~/.Garmin/ConnectIQ/Sdks/sdk/bin/ | head -20
+          echo "Device count: $(ls ~/.Garmin/ConnectIQ/Devices/ | wc -l)"
 
       - name: Generate Developer Key
         run: |
