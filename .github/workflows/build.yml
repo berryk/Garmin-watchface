@@ -145,12 +145,22 @@ jobs:
       - name: Install Screenshot Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb x11-utils scrot imagemagick libgtk-3-0 libwebkit2gtk-4.0-37 libsecret-1-0 2>/dev/null || {
-            sudo apt-get install -y xvfb x11-utils scrot imagemagick libsecret-1-0
-          }
+          # Install all required libraries for the simulator
+          sudo apt-get install -y \
+            xvfb \
+            x11-utils \
+            scrot \
+            imagemagick \
+            libgtk-3-0 \
+            libwebkit2gtk-4.0-37 \
+            libsecret-1-0 \
+            libglib2.0-0 \
+            libgdk-pixbuf2.0-0 \
+            libcairo2 \
+            libpango-1.0-0
 
       - name: Take Simulator Screenshot
-        continue-on-error: true  # Don't fail build if screenshot fails
+        continue-on-error: false  # Fail if screenshot capture fails
         run: |
           mkdir -p screenshots
           
