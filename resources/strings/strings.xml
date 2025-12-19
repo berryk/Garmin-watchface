@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    String resources for GMT World Time Watchface
+-->
+<strings>
+    <string id="AppName">GMT World Time</string>
+    
+    <!-- City 1 Settings (Top Left) -->
+    <string id="City1LabelTitle">City 1 Abbreviation</string>
+    <string id="City1OffsetTitle">City 1 GMT Offset (hours)</string>
+    <string id="City1DSTTitle">City 1 Currently in DST</string>
+    
+    <!-- City 2 Settings (Top Right) -->
+    <string id="City2LabelTitle">City 2 Abbreviation</string>
+    <string id="City2OffsetTitle">City 2 GMT Offset (hours)</string>
+    <string id="City2DSTTitle">City 2 Currently in DST</string>
+    
+    <!-- City 3 Settings (Bottom Left) -->
+    <string id="City3LabelTitle">City 3 Abbreviation</string>
+    <string id="City3OffsetTitle">City 3 GMT Offset (hours)</string>
+    <string id="City3DSTTitle">City 3 Currently in DST</string>
+    
+    <!-- City 4 Settings (Bottom Right) -->
+    <string id="City4LabelTitle">City 4 Abbreviation</string>
+    <string id="City4OffsetTitle">City 4 GMT Offset (hours)</string>
+    <string id="City4DSTTitle">City 4 Currently in DST</string>
+</strings>

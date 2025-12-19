@@ -1,0 +1,159 @@
+<?xml version="1.0"?>
+<!-- Garmin Connect IQ Manifest - GMT World Time Watchface -->
+<iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
+    <iq:application entry="GMTWorldTimeApp" 
+                    id="a3421bee-d798-4dc2-a7c5-5a9b4d7e1234" 
+                    launcherIcon="@Drawables.LauncherIcon"
+                    minApiLevel="3.1.0"
+                    name="@Strings.AppName" 
+                    type="watchface"
+                    version="1.0.0">
+        
+        <!-- Supported Devices - Comprehensive list for maximum compatibility -->
+        <iq:products>
+            <!-- Fenix Series -->
+            <iq:product id="fenix5"/>
+            <iq:product id="fenix5plus"/>
+            <iq:product id="fenix5s"/>
+            <iq:product id="fenix5splus"/>
+            <iq:product id="fenix5x"/>
+            <iq:product id="fenix5xplus"/>
+            <iq:product id="fenix6"/>
+            <iq:product id="fenix6pro"/>
+            <iq:product id="fenix6s"/>
+            <iq:product id="fenix6spro"/>
+            <iq:product id="fenix6xpro"/>
+            <iq:product id="fenix7"/>
+            <iq:product id="fenix7pro"/>
+            <iq:product id="fenix7s"/>
+            <iq:product id="fenix7spro"/>
+            <iq:product id="fenix7x"/>
+            <iq:product id="fenix7xpro"/>
+            <iq:product id="fenix8"/>
+            
+            <!-- Forerunner Series -->
+            <iq:product id="fr245"/>
+            <iq:product id="fr245m"/>
+            <iq:product id="fr255"/>
+            <iq:product id="fr255m"/>
+            <iq:product id="fr255s"/>
+            <iq:product id="fr255sm"/>
+            <iq:product id="fr265"/>
+            <iq:product id="fr265s"/>
+            <iq:product id="fr55"/>
+            <iq:product id="fr645"/>
+            <iq:product id="fr645m"/>
+            <iq:product id="fr745"/>
+            <iq:product id="fr935"/>
+            <iq:product id="fr945"/>
+            <iq:product id="fr945lte"/>
+            <iq:product id="fr955"/>
+            <iq:product id="fr965"/>
+            
+            <!-- Venu Series -->
+            <iq:product id="venu"/>
+            <iq:product id="venu2"/>
+            <iq:product id="venu2plus"/>
+            <iq:product id="venu2s"/>
+            <iq:product id="venu3"/>
+            <iq:product id="venu3s"/>
+            <iq:product id="venu441mm"/>
+            <iq:product id="venu445mm"/>
+            <iq:product id="venud"/>
+            <iq:product id="venusq"/>
+            <iq:product id="venusq2"/>
+            <iq:product id="venusq2m"/>
+            <iq:product id="venusqm"/>
+            <iq:product id="venux1"/>
+            
+            <!-- Lily Series -->
+            <iq:product id="lily2"/>
+            
+            <!-- Vivoactive Series -->
+            <iq:product id="vivoactive3"/>
+            <iq:product id="vivoactive3d"/>
+            <iq:product id="vivoactive3m"/>
+            <iq:product id="vivoactive3mlte"/>
+            <iq:product id="vivoactive4"/>
+            <iq:product id="vivoactive4s"/>
+            <iq:product id="vivoactive5"/>
+            
+            <!-- Epix Series -->
+            <iq:product id="epix2"/>
+            <iq:product id="epix2pro42mm"/>
+            <iq:product id="epix2pro47mm"/>
+            <iq:product id="epix2pro51mm"/>
+            
+            <!-- Enduro Series -->
+            <iq:product id="enduro"/>
+            <iq:product id="enduro2"/>
+            
+            <!-- Instinct Series -->
+            <iq:product id="instinct2"/>
+            <iq:product id="instinct2s"/>
+            <iq:product id="instinct2x"/>
+            <iq:product id="instinctcrossover"/>
+            
+            <!-- Marq Series -->
+            <iq:product id="marqadventurer"/>
+            <iq:product id="marqathlete"/>
+            <iq:product id="marqaviator"/>
+            <iq:product id="marqcaptain"/>
+            <iq:product id="marqcommander"/>
+            <iq:product id="marqdriver"/>
+            <iq:product id="marqexpedition"/>
+            <iq:product id="marqgolfer"/>
+            <iq:product id="marq2"/>
+            <iq:product id="marq2aviator"/>
+            
+            <!-- D2 Aviation Series -->
+            <iq:product id="d2airx10"/>
+            <iq:product id="d2delta"/>
+            <iq:product id="d2deltapx"/>
+            <iq:product id="d2deltas"/>
+            <iq:product id="d2mach1"/>
+            
+            <!-- Descent Dive Series -->
+            <iq:product id="descentg1"/>
+            <iq:product id="descentmk2"/>
+            <iq:product id="descentmk2s"/>
+            <iq:product id="descentmk3"/>
+            
+            <!-- Approach Golf Series -->
+            <iq:product id="approachs6042mm"/>
+            <iq:product id="approachs6247mm"/>
+            <iq:product id="approachs7042mm"/>
+            <iq:product id="approachs7047mm"/>
+            
+            <!-- Tactix Series -->
+            <iq:product id="tactix7"/>
+            <iq:product id="tactix7pro"/>
+            <iq:product id="tactixdelta"/>
+            
+            <!-- Quatix Marine Series -->
+            <iq:product id="quatix6"/>
+            <iq:product id="quatix6x"/>
+            <iq:product id="quatix7"/>
+            <iq:product id="quatix7x"/>
+            
+            <!-- Legacy/Captain Marvel/Rey Series -->
+            <iq:product id="legacyherocaptainmarvel"/>
+            <iq:product id="legacyherofirstavenger"/>
+            <iq:product id="legacysagadarthvader"/>
+            <iq:product id="legacysagarey"/>
+        </iq:products>
+        
+        <!-- Permissions -->
+        <iq:permissions>
+            <iq:uses-permission id="Background"/>
+        </iq:permissions>
+        
+        <!-- Languages -->
+        <iq:languages>
+            <iq:language>eng</iq:language>
+        </iq:languages>
+        
+        <!-- Barrels (dependencies) -->
+        <iq:barrels/>
+    </iq:application>
+</iq:manifest>

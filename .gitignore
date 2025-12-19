@@ -1,0 +1,25 @@
+# Garmin Connect IQ Build Artifacts
+bin/
+*.prg
+
+# Developer Key (keep private!)
+developer_key.pem
+*.der
+
+# IDE and Editor files
+.vscode/
+*.code-workspace
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# Connect IQ SDK generated files
+*.debug.xml

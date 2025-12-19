@@ -1,0 +1,9 @@
+# Jungle file for GMT World Time Watchface
+# This file configures the build process
+
+# Project configuration
+project.manifest = manifest.xml
+
+# Base source files
+base.sourcePath = source
+base.resourcePath = resources

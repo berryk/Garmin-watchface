@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garmin Watchface Preview - GMT World Time</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #fff;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .watch-container {
+            position: relative;
+        }
+
+        .watch-bezel {
+            width: 320px;
+            height: 320px;
+            background: linear-gradient(145deg, #2d2d2d, #1a1a1a);
+            border-radius: 50%;
+            padding: 15px;
+            box-shadow: 
+                0 10px 30px rgba(0, 0, 0, 0.5),
+                inset 0 2px 4px rgba(255, 255, 255, 0.1);
+        }
+
+        .watch-screen {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .date-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .date-text {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+
+        .bluetooth-icon {
+            font-size: 14px;
+        }
+
+        .bluetooth-connected {
+            color: #4fc3f7;
+        }
+
+        .bluetooth-disconnected {
+            color: #666;
+        }
+
+        .world-time-row {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 8px 0;
+        }
+
+        .world-time {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .city-code {
+            color: #888;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .city-hour {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .main-time {
+            color: #fff;
+            font-size: 72px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin: 5px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .steps-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .steps-icon {
+            font-size: 16px;
+        }
+
+        .steps-count {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .toggle-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        button {
+            background: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #444;
+        }
+
+        button.active {
+            background: #4fc3f7;
+            color: #000;
+        }
+
+        .info {
+            color: #666;
+            font-size: 12px;
+            text-align: center;
+            max-width: 400px;
+            line-height: 1.6;
+        }
+
+        .device-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .device-btn {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        /* Rectangular watch variant */
+        .watch-bezel.rectangular {
+            border-radius: 40px;
+            width: 260px;
+            height: 320px;
+        }
+
+        .watch-bezel.rectangular .watch-screen {
+            border-radius: 30px;
+        }
+    </style>
+</head>
+<body>
+    <h1>GMT World Time Watchface</h1>
+    <p class="subtitle">Preview - Garmin Connect IQ</p>
+
+    <div class="watch-container">
+        <div class="watch-bezel" id="watchBezel">
+            <div class="watch-screen">
+                <!-- Date Row -->
+                <div class="date-row">
+                    <span class="date-text" id="dateText">THU 19 DEC</span>
+                    <span class="bluetooth-icon bluetooth-connected" id="bluetoothIcon">⦿</span>
+                </div>
+
+                <!-- Top World Times (London, Hong Kong) -->
+                <div class="world-time-row">
+                    <div class="world-time">
+                        <span class="city-code">LN</span>
+                        <span class="city-hour" id="londonTime">18</span>
+                    </div>
+                    <div class="world-time">
+                        <span class="city-code">HK</span>
+                        <span class="city-hour" id="hongkongTime">02</span>
+                    </div>
+                </div>
+
+                <!-- Main Time -->
+                <div class="main-time" id="mainTime">18:42</div>
+
+                <!-- Bottom World Times (New York, San Francisco) -->
+                <div class="world-time-row">
+                    <div class="world-time">
+                        <span class="city-code">NY</span>
+                        <span class="city-hour" id="newyorkTime">13</span>
+                    </div>
+                    <div class="world-time">
+                        <span class="city-code">SF</span>
+                        <span class="city-hour" id="sanfranTime">10</span>
+                    </div>
+                </div>
+
+                <!-- Steps Row -->
+                <div class="steps-row">
+                    <span class="steps-icon">🚶</span>
+                    <span class="steps-count" id="stepsCount">8,432</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="toggle-row">
+            <button id="liveTimeBtn" class="active">Live Time</button>
+            <button id="bluetoothToggle">Toggle Bluetooth</button>
+        </div>
+        
+        <div class="device-selector">
+            <button class="device-btn active" id="roundBtn">Round Watch</button>
+            <button class="device-btn" id="rectBtn">Rectangular</button>
+        </div>
+
+        <p class="info">
+            This is a preview of how the watchface will appear on your Garmin device. 
+            The actual watchface will use system fonts and adapt to your specific device's screen size.
+        </p>
+    </div>
+
+    <script>
+        // Time zone offsets from UTC (in hours)
+        const TIMEZONES = {
+            london: 0,      // UTC+0 (GMT) - Note: +1 in summer (BST)
+            hongkong: 8,    // UTC+8
+            newyork: -5,    // UTC-5 (EST) - Note: -4 in summer (EDT)
+            sanfrancisco: -8 // UTC-8 (PST) - Note: -7 in summer (PDT)
+        };
+
+        // DOM elements
+        const mainTimeEl = document.getElementById('mainTime');
+        const dateTextEl = document.getElementById('dateText');
+        const londonTimeEl = document.getElementById('londonTime');
+        const hongkongTimeEl = document.getElementById('hongkongTime');
+        const newyorkTimeEl = document.getElementById('newyorkTime');
+        const sanfranTimeEl = document.getElementById('sanfranTime');
+        const stepsCountEl = document.getElementById('stepsCount');
+        const bluetoothIconEl = document.getElementById('bluetoothIcon');
+        const watchBezelEl = document.getElementById('watchBezel');
+
+        let isLiveTime = true;
+        let isBluetoothConnected = true;
+        let steps = 8432;
+
+        // Days and months
+        const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+        const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
+                        'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+        function padZero(num) {
+            return num.toString().padStart(2, '0');
+        }
+
+        function getTimeInTimezone(date, offsetHours) {
+            const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+            const tzTime = new Date(utc + (offsetHours * 3600000));
+            return tzTime.getHours();
+        }
+
+        function updateTime() {
+            const now = new Date();
+            
+            // Main time (local)
+            const hours = padZero(now.getHours());
+            const minutes = padZero(now.getMinutes());
+            mainTimeEl.textContent = `${hours}:${minutes}`;
+            
+            // Date
+            const day = DAYS[now.getDay()];
+            const date = now.getDate();
+            const month = MONTHS[now.getMonth()];
+            dateTextEl.textContent = `${day} ${date} ${month}`;
+            
+            // World times (hour only)
+            // Using current DST-aware approach for demo
+            // Actual implementation would need proper timezone library
+            londonTimeEl.textContent = padZero(getTimeInTimezone(now, TIMEZONES.london));
+            hongkongTimeEl.textContent = padZero(getTimeInTimezone(now, TIMEZONES.hongkong));
+            newyorkTimeEl.textContent = padZero(getTimeInTimezone(now, TIMEZONES.newyork));
+            sanfranTimeEl.textContent = padZero(getTimeInTimezone(now, TIMEZONES.sanfrancisco));
+        }
+
+        function toggleBluetooth() {
+            isBluetoothConnected = !isBluetoothConnected;
+            if (isBluetoothConnected) {
+                bluetoothIconEl.className = 'bluetooth-icon bluetooth-connected';
+                bluetoothIconEl.textContent = '⦿';
+            } else {
+                bluetoothIconEl.className = 'bluetooth-icon bluetooth-disconnected';
+                bluetoothIconEl.textContent = '○';
+            }
+        }
+
+        function simulateSteps() {
+            // Simulate step count increasing
+            steps += Math.floor(Math.random() * 50);
+            stepsCountEl.textContent = steps.toLocaleString();
+        }
+
+        // Event listeners
+        document.getElementById('liveTimeBtn').addEventListener('click', function() {
+            isLiveTime = !isLiveTime;
+            this.classList.toggle('active');
+            this.textContent = isLiveTime ? 'Live Time' : 'Static Time';
+        });
+
+        document.getElementById('bluetoothToggle').addEventListener('click', toggleBluetooth);
+
+        document.getElementById('roundBtn').addEventListener('click', function() {
+            watchBezelEl.classList.remove('rectangular');
+            this.classList.add('active');
+            document.getElementById('rectBtn').classList.remove('active');
+        });
+
+        document.getElementById('rectBtn').addEventListener('click', function() {
+            watchBezelEl.classList.add('rectangular');
+            this.classList.add('active');
+            document.getElementById('roundBtn').classList.remove('active');
+        });
+
+        // Update time every second
+        setInterval(() => {
+            if (isLiveTime) {
+                updateTime();
+            }
+        }, 1000);
+
+        // Simulate steps increasing every 5 seconds
+        setInterval(simulateSteps, 5000);
+
+        // Initial update
+        updateTime();
+    </script>
+</body>
+</html>
