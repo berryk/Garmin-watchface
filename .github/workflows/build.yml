@@ -1,5 +1,5 @@
 # GitHub Actions workflow for building GMT World Time Watchface
-# Builds for multiple Garmin Connect IQ devices
+# Builds for multiple Garmin Connect IQ devices with headless screenshot capture
 
 name: Build Garmin Watchface
 
@@ -10,9 +10,6 @@ on:
     branches: [ master, main ]
   workflow_dispatch:  # Allow manual trigger
 
-env:
-  SDK_VERSION: "8.4.0-2025-12-03-5122605dc"
-  
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -52,52 +49,96 @@ jobs:
         id: cache-sdk
         uses: actions/cache@v4
         with:
-          path: ~/connectiq-sdk
-          key: connectiq-sdk-${{ env.SDK_VERSION }}
+          path: |
+            ~/.Garmin/ConnectIQ
+          key: connectiq-sdk-7.3.1-${{ runner.os }}
 
-      - name: Download Connect IQ SDK
-        if: steps.cache-sdk.outputs.cache-hit != 'true'
+      - name: Download and Setup Connect IQ SDK
         run: |
-          mkdir -p ~/connectiq-sdk
-          cd ~/connectiq-sdk
-          # Download SDK from Garmin
-          wget -q "https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-lin-${{ env.SDK_VERSION }}.zip" -O sdk.zip || \
-          wget -q "https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-linux-${{ env.SDK_VERSION }}.zip" -O sdk.zip
-          unzip -q sdk.zip
-          rm sdk.zip
-          # Make monkeyc executable
-          chmod +x bin/monkeyc
-
-      - name: Download device files
-        run: |
-          # Device files are needed for compilation
+          # Create directories
+          mkdir -p ~/.Garmin/ConnectIQ/Sdks
           mkdir -p ~/.Garmin/ConnectIQ/Devices
-          cd ~/.Garmin/ConnectIQ/Devices
-          # Download device package for the specific device
-          wget -q "https://developer.garmin.com/downloads/connect-iq/devices/${{ matrix.device }}.zip" -O device.zip 2>/dev/null || echo "Device file may be bundled with SDK"
-          if [ -f device.zip ]; then
-            unzip -q device.zip
-            rm device.zip
-          fi
+          
+          # Download SDK (using a known working version)
+          SDK_URL="https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-lin-7.3.1-2024-06-06-7e1acd876.zip"
+          
+          echo "Downloading Connect IQ SDK..."
+          wget -q "$SDK_URL" -O /tmp/sdk.zip || {
+            echo "Failed to download SDK. Trying alternative URL..."
+            # Try alternative/older version
+            wget -q "https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-lin-4.2.4-2023-10-18-dccd8f56f.zip" -O /tmp/sdk.zip
+          }
+          
+          echo "Extracting SDK..."
+          unzip -q /tmp/sdk.zip -d ~/.Garmin/ConnectIQ/Sdks/sdk
+          rm /tmp/sdk.zip
+          
+          # Set SDK path
+          echo "CONNECTIQ_SDK=$HOME/.Garmin/ConnectIQ/Sdks/sdk" >> $GITHUB_ENV
+          
+          # Make scripts executable
+          chmod +x ~/.Garmin/ConnectIQ/Sdks/sdk/bin/* 2>/dev/null || true
+          
+          echo "SDK installed to: $HOME/.Garmin/ConnectIQ/Sdks/sdk"
+          ls -la ~/.Garmin/ConnectIQ/Sdks/sdk/bin/ || echo "bin directory not found"
 
-      - name: Generate developer key
+      - name: Download Device Files
+        run: |
+          DEVICE="${{ matrix.device }}"
+          DEVICE_URL="https://developer.garmin.com/downloads/connect-iq/devices/${DEVICE}.zip"
+          
+          echo "Downloading device files for: $DEVICE"
+          mkdir -p ~/.Garmin/ConnectIQ/Devices/$DEVICE
+          
+          wget -q "$DEVICE_URL" -O /tmp/device.zip 2>/dev/null && {
+            unzip -q /tmp/device.zip -d ~/.Garmin/ConnectIQ/Devices/$DEVICE
+            rm /tmp/device.zip
+            echo "Device files installed for: $DEVICE"
+          } || echo "Device files may be bundled with SDK or not available separately"
+
+      - name: Generate Developer Key
         run: |
           # Generate a developer key for building (CI-only, not for distribution)
           openssl genrsa -out developer_key.pem 4096
           # Convert to DER format
           openssl pkcs8 -topk8 -inform PEM -outform DER -in developer_key.pem -out developer_key.der -nocrypt
+          echo "Developer key generated"
 
       - name: Build for ${{ matrix.device }}
         run: |
-          SDK_PATH=~/connectiq-sdk
+          mkdir -p bin
           
-          # Build using monkeybrains.jar directly
-          java -jar "$SDK_PATH/bin/monkeybrains.jar" \
+          # Use the SDK we downloaded
+          SDK_PATH="$HOME/.Garmin/ConnectIQ/Sdks/sdk"
+          
+          echo "Building for device: ${{ matrix.device }}"
+          echo "SDK Path: $SDK_PATH"
+          
+          # Find monkeybrains.jar
+          MONKEYBRAINS=$(find $SDK_PATH -name "monkeybrains.jar" | head -1)
+          
+          if [ -z "$MONKEYBRAINS" ]; then
+            echo "ERROR: monkeybrains.jar not found in SDK"
+            ls -la $SDK_PATH/
+            exit 1
+          fi
+          
+          echo "Using monkeybrains.jar: $MONKEYBRAINS"
+          
+          # Build the watchface
+          java -jar "$MONKEYBRAINS" \
             -o "bin/GMTWorldTime-${{ matrix.device }}.prg" \
             -f monkey.jungle \
             -d ${{ matrix.device }} \
             -y developer_key.der \
-            -w
+            -w 2>&1 || {
+              echo "Build failed, showing detailed error..."
+              java -jar "$MONKEYBRAINS" \
+                -o "bin/GMTWorldTime-${{ matrix.device }}.prg" \
+                -f monkey.jungle \
+                -d ${{ matrix.device }} \
+                -y developer_key.der
+            }
           
           # Check if build succeeded
           if [ -f "bin/GMTWorldTime-${{ matrix.device }}.prg" ]; then
@@ -108,33 +149,140 @@ jobs:
             exit 1
           fi
 
-      - name: Upload artifact
+      - name: Install Screenshot Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb x11-utils scrot imagemagick libgtk-3-0 libwebkit2gtk-4.0-37 2>/dev/null || {
+            sudo apt-get install -y xvfb x11-utils scrot imagemagick
+          }
+
+      - name: Take Simulator Screenshot
+        continue-on-error: true  # Don't fail build if screenshot fails
+        run: |
+          mkdir -p screenshots
+          
+          SDK_PATH="$HOME/.Garmin/ConnectIQ/Sdks/sdk"
+          SIMULATOR="$SDK_PATH/bin/simulator"
+          MONKEYBRAINS=$(find $SDK_PATH -name "monkeybrains.jar" | head -1)
+          SHELL_EXE="$SDK_PATH/bin/shell"
+          
+          # Check if simulator exists
+          if [ ! -f "$SIMULATOR" ]; then
+            echo "Simulator not found, skipping screenshot"
+            echo "Available files in bin:"
+            ls -la $SDK_PATH/bin/
+            exit 0
+          fi
+          
+          # Start virtual display
+          echo "Starting Xvfb..."
+          Xvfb :99 -screen 0 1024x768x24 &
+          XVFB_PID=$!
+          export DISPLAY=:99
+          sleep 2
+          
+          # Start simulator
+          echo "Starting simulator..."
+          chmod +x "$SIMULATOR" 2>/dev/null || true
+          "$SIMULATOR" &
+          SIMULATOR_PID=$!
+          sleep 5
+          
+          # Load the watchface
+          echo "Loading watchface..."
+          java -classpath "$MONKEYBRAINS" \
+            com.garmin.monkeybrains.monkeydodeux.MonkeyDoDeux \
+            -f "bin/GMTWorldTime-${{ matrix.device }}.prg" \
+            -d ${{ matrix.device }} \
+            -s "$SHELL_EXE" 2>&1 || echo "MonkeyDo may have failed"
+          
+          sleep 3
+          
+          # Capture screenshot
+          echo "Capturing screenshot..."
+          scrot "screenshots/${{ matrix.device }}.png" 2>/dev/null || {
+            # Try alternative screenshot method
+            import -window root "screenshots/${{ matrix.device }}.png" 2>/dev/null || echo "Screenshot capture failed"
+          }
+          
+          # Cleanup
+          kill $SIMULATOR_PID 2>/dev/null || true
+          kill $XVFB_PID 2>/dev/null || true
+          
+          if [ -f "screenshots/${{ matrix.device }}.png" ]; then
+            echo "✅ Screenshot captured for ${{ matrix.device }}"
+            ls -la screenshots/
+          else
+            echo "⚠️ Screenshot not captured for ${{ matrix.device }}"
+          fi
+
+      - name: Upload PRG Artifact
         uses: actions/upload-artifact@v4
         with:
           name: GMTWorldTime-${{ matrix.device }}
           path: bin/GMTWorldTime-${{ matrix.device }}.prg
           retention-days: 30
 
-  # Combine all builds into a single release artifact
-  combine-builds:
+      - name: Upload Screenshot
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshot-${{ matrix.device }}
+          path: screenshots/${{ matrix.device }}.png
+          retention-days: 30
+          if-no-files-found: ignore
+
+  # Combine all builds into a single artifact
+  combine-artifacts:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: always()
     
     steps:
-      - name: Download all artifacts
+      - name: Download all PRG artifacts
         uses: actions/download-artifact@v4
         with:
-          path: builds/
+          path: all-builds/
           pattern: GMTWorldTime-*
           merge-multiple: true
 
-      - name: Create combined artifact
+      - name: Download all screenshots
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          path: all-screenshots/
+          pattern: screenshot-*
+          merge-multiple: true
+
+      - name: Create combined builds artifact
         uses: actions/upload-artifact@v4
         with:
           name: GMTWorldTime-all-devices
-          path: builds/
+          path: all-builds/
           retention-days: 90
+
+      - name: Create combined screenshots artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: all-screenshots
+          path: all-screenshots/
+          retention-days: 90
+          if-no-files-found: ignore
+
+      - name: Generate Build Summary
+        run: |
+          echo "## Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Device | PRG File |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          for prg in all-builds/*.prg; do
+            if [ -f "$prg" ]; then
+              name=$(basename "$prg" .prg)
+              size=$(ls -lh "$prg" | awk '{print $5}')
+              echo "| ${name#GMTWorldTime-} | ✅ $size |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
 
   # Create a release on tags
   release:
