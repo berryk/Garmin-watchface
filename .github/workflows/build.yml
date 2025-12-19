@@ -271,6 +271,157 @@ jobs:
             fi
           done
 
+  # Generate HTML build report with screenshots
+  generate-report:
+    needs: combine-artifacts
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all builds
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          path: all-builds/
+          pattern: GMTWorldTime-*
+          merge-multiple: true
+
+      - name: Download all screenshots
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          path: all-screenshots/
+          pattern: screenshot-*
+          merge-multiple: true
+
+      - name: Generate HTML Build Report
+        run: |
+          mkdir -p build-report
+          
+          # Get timestamp
+          TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+          
+          # Count devices
+          TOTAL_DEVICES=0
+          PASSED_DEVICES=0
+          FAILED_DEVICES=0
+          
+          if [ -d "all-builds" ]; then
+            TOTAL_DEVICES=$(find all-builds -name "*.prg" | wc -l)
+            PASSED_DEVICES=$TOTAL_DEVICES
+          fi
+          
+          # Start HTML
+          cat > build-report/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>GMT World Time - Build Report</title>
+              <style>
+                  * { box-sizing: border-box; }
+                  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 40px; background: #0a0a0a; color: #fff; }
+                  h1 { color: #fff; font-weight: 300; margin-bottom: 10px; }
+                  .timestamp { color: #666; margin-bottom: 30px; }
+                  .summary { display: flex; gap: 30px; margin-bottom: 40px; }
+                  .stat { background: #1a1a1a; padding: 20px 30px; border-radius: 12px; text-align: center; }
+                  .stat-value { font-size: 42px; font-weight: 700; }
+                  .stat-label { color: #888; font-size: 14px; margin-top: 5px; }
+                  .pass { color: #4ade80; }
+                  .fail { color: #f87171; }
+                  .device-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+                  .device-card { background: #1a1a1a; border-radius: 12px; overflow: hidden; }
+                  .device-header { padding: 15px 20px; border-bottom: 1px solid #333; }
+                  .device-name { font-weight: 600; font-size: 15px; }
+                  .device-info { color: #666; font-size: 11px; margin-top: 4px; }
+                  .device-screenshot { width: 100%; aspect-ratio: 1; object-fit: contain; background: #000; }
+                  .no-screenshot { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: #0a0a0a; color: #444; font-size: 14px; }
+                  .device-status { padding: 12px 20px; font-size: 12px; font-weight: 500; }
+                  .status-pass { background: #052e16; color: #4ade80; }
+                  .status-fail { background: #450a0a; color: #f87171; }
+              </style>
+          </head>
+          <body>
+              <h1>GMT World Time Watchface</h1>
+              <p class="timestamp">Build Report - TIMESTAMP_PLACEHOLDER</p>
+              
+              <div class="summary">
+                  <div class="stat">
+                      <div class="stat-value">TOTAL_PLACEHOLDER</div>
+                      <div class="stat-label">Devices Tested</div>
+                  </div>
+                  <div class="stat">
+                      <div class="stat-value pass">PASSED_PLACEHOLDER</div>
+                      <div class="stat-label">Build Passed</div>
+                  </div>
+                  <div class="stat">
+                      <div class="stat-value fail">FAILED_PLACEHOLDER</div>
+                      <div class="stat-label">Build Failed</div>
+                  </div>
+              </div>
+              
+              <div class="device-grid">
+          EOF
+          
+          # Add device cards
+          for prg in all-builds/*.prg; do
+            if [ -f "$prg" ]; then
+              device=$(basename "$prg" .prg | sed 's/GMTWorldTime-//')
+              device_name=$(echo "$device" | sed 's/\([a-z]\)\([0-9]\)/\1 \2/g' | sed 's/\([a-z]\)\([A-Z]\)/\1 \2/g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2))} 1')
+              prg_size=$(ls -lh "$prg" | awk '{print $5}')
+              screenshot_file="all-screenshots/${device}.png"
+              
+              cat >> build-report/index.html << CARD
+                  <div class="device-card">
+                      <div class="device-header">
+                          <div class="device-name">$device_name</div>
+                          <div class="device-info">$device - $prg_size</div>
+                      </div>
+          CARD
+              
+              if [ -f "$screenshot_file" ]; then
+                cp "$screenshot_file" "build-report/${device}.png"
+                cat >> build-report/index.html << CARD
+                      <img class='device-screenshot' src='${device}.png' alt='$device_name'>
+          CARD
+              else
+                cat >> build-report/index.html << CARD
+                      <div class='no-screenshot'>No screenshot available</div>
+          CARD
+              fi
+              
+              cat >> build-report/index.html << CARD
+                      <div class="device-status status-pass">✅ Build Passed</div>
+                  </div>
+          CARD
+            fi
+          done
+          
+          # Close HTML
+          cat >> build-report/index.html << 'EOF'
+              </div>
+          </body>
+          </html>
+          EOF
+          
+          # Replace placeholders
+          sed -i "s/TIMESTAMP_PLACEHOLDER/$TIMESTAMP/g" build-report/index.html
+          sed -i "s/TOTAL_PLACEHOLDER/$TOTAL_DEVICES/g" build-report/index.html
+          sed -i "s/PASSED_PLACEHOLDER/$PASSED_DEVICES/g" build-report/index.html
+          sed -i "s/FAILED_PLACEHOLDER/$FAILED_DEVICES/g" build-report/index.html
+          
+          echo "✅ Build report generated with $TOTAL_DEVICES devices"
+          ls -la build-report/
+
+      - name: Upload Build Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-report
+          path: build-report/
+          retention-days: 90
+
   # Create a release on tags
   release:
     needs: build
