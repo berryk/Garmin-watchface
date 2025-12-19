@@ -10,6 +10,12 @@ on:
     branches: [ master, main ]
   workflow_dispatch:  # Allow manual trigger
 
+# Sets permissions for GitHub Pages deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -139,8 +145,8 @@ jobs:
       - name: Install Screenshot Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb x11-utils scrot imagemagick libgtk-3-0 libwebkit2gtk-4.0-37 2>/dev/null || {
-            sudo apt-get install -y xvfb x11-utils scrot imagemagick
+          sudo apt-get install -y xvfb x11-utils scrot imagemagick libgtk-3-0 libwebkit2gtk-4.0-37 libsecret-1-0 2>/dev/null || {
+            sudo apt-get install -y xvfb x11-utils scrot imagemagick libsecret-1-0
           }
 
       - name: Take Simulator Screenshot
@@ -421,6 +427,28 @@ jobs:
           name: build-report
           path: build-report/
           retention-days: 90
+
+  # Deploy build report to GitHub Pages
+  deploy-pages:
+    needs: generate-report
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Download build report
+        uses: actions/download-artifact@v4
+        with:
+          name: build-report
+          path: ./public
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   # Create a release on tags
   release:
