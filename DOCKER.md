@@ -72,13 +72,24 @@ docker run --rm \
 
 ## GitHub Actions Integration
 
-The GitHub Actions workflow automatically:
+The GitHub Actions workflow is optimized for efficiency:
 
-1. Builds the Docker image (with layer caching)
-2. Runs builds for all 15 devices in parallel
+1. **Builds the Docker image once** and pushes to GitHub Container Registry (GHCR)
+2. **All 15 device builds run in parallel**, pulling the same pre-built image
 3. Captures screenshots using the simulator
 4. Generates an HTML build report
 5. Deploys to GitHub Pages
+
+**Performance Optimization:**
+- Docker image built once per workflow run (not 15 times in parallel)
+- Image cached in GHCR for fast pulls across all matrix jobs
+- Build time reduced from ~15 image builds to just 1
+- Each device build starts immediately after image is available
+
+**Container Registry:**
+- Images stored at: `ghcr.io/{owner}/{repo}/builder`
+- Automatically tagged with branch name and commit SHA
+- Old images cleaned up automatically by GitHub
 
 See `.github/workflows/build.yml` for the full workflow.
 
@@ -186,16 +197,24 @@ export DEVICE=venu3
 
 ## CI/CD Performance
 
+**Workflow Jobs:**
+1. `build-docker-image` - Builds once, pushes to GHCR (~2-3 minutes)
+2. `build` (matrix) - 15 parallel jobs pull and use the image
+3. `combine-artifacts` - Merges all builds
+4. `generate-report` - Creates HTML report
+5. `deploy-pages` - Deploys to GitHub Pages
+
 **Optimizations:**
-- Docker layer caching for faster image builds
+- **Single Docker build** shared across all matrix jobs (major time saver!)
+- GitHub Actions cache for Docker layers (type=gha)
 - Parallel matrix builds (15 devices simultaneously)
 - SDK cached in Docker volume
-- Buildx cache for multi-stage efficiency
+- GHCR image pull is very fast (<30 seconds)
 
 **Typical Build Times:**
-- First build (no cache): ~8-10 minutes
-- Subsequent builds (with cache): ~3-5 minutes
-- Per-device build: ~30-60 seconds
+- Docker image build (once): ~2-3 minutes
+- Per-device build: ~30-60 seconds each (all run in parallel)
+- Total workflow time: ~4-6 minutes (down from 10-15 minutes)
 
 ## Contributing
 

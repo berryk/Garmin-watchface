@@ -17,8 +17,54 @@ permissions:
   id-token: write
 
 jobs:
-  build:
+  # Build Docker image once and push to GHCR
+  build-docker-image:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/builder
+          tags: |
+            type=sha,prefix={{branch}}-
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Build watch faces for all devices using the shared Docker image
+  build:
+    needs: build-docker-image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
 
     strategy:
       matrix:
@@ -44,43 +90,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Cache Docker layers
-        uses: actions/cache@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ hashFiles('Dockerfile') }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: false
-          load: true
-          tags: garmin-connectiq-builder:latest
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-
-      # Avoids ever-growing cache
-      - name: Move cache
+      - name: Pull Docker image
         run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          docker pull ghcr.io/${{ github.repository }}/builder:${{ github.ref_name }}
 
       - name: Build and Screenshot for ${{ matrix.device }}
         run: |
           # Create output directories
           mkdir -p bin screenshots
 
-          # Run build inside Docker container
+          # Run build inside Docker container using the shared image from GHCR
           docker run --rm \
             -v "$(pwd):/workspace" \
             -e DEVICE="${{ matrix.device }}" \
-            garmin-connectiq-builder:latest \
+            ghcr.io/${{ github.repository }}/builder:${{ github.ref_name }} \
             /workspace/scripts/build-in-docker.sh
 
           # Verify build output
