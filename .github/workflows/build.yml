@@ -60,6 +60,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            GARMIN_EMAIL=${{ secrets.GARMIN_EMAIL }}
+            GARMIN_PASSWORD=${{ secrets.GARMIN_PASSWORD }}
 
   # Build watch faces for all devices using the shared Docker image
   build:
