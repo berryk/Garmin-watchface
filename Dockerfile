@@ -74,7 +74,7 @@ RUN apt-get update && apt-get install -y \
 ENV SDK_VERSION=8.4.0
 ENV SDK_URL=https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-lin-8.4.0-2025-12-03-5122605dc.zip
 # Use known-working Devices folder from GitHub release
-ENV DEVICES_URL=https://github.com/berryk/Garmin-watchface/releases/download/sdk-v8.4.0-linux/devices.tar.gz
+ENV DEVICES_URL=https://github.com/berryk/Garmin-watchface/releases/download/devices-v1.0.0/connectiq-devices.zip
 
 # Create directory structure for SDK (standard Garmin layout)
 RUN mkdir -p ${GARMIN_HOME}/ConnectIQ/Sdks && \
@@ -90,15 +90,23 @@ RUN mkdir -p ${GARMIN_HOME}/ConnectIQ/Sdks && \
     mv "$SDK_ROOT" ${CONNECTIQ_SDK_PATH} && \
     echo "Binaries installed: $(ls ${CONNECTIQ_SDK_PATH}/bin/ 2>/dev/null | wc -l)" && \
     rm -rf /tmp/sdk.zip /tmp/sdk-extract && \
-    echo "Downloading known-working Devices folder..." && \
-    wget -q --show-progress "${DEVICES_URL}" -O /tmp/devices.tar.gz && \
-    echo "Extracting devices..." && \
-    tar -xzf /tmp/devices.tar.gz -C ${GARMIN_HOME}/ConnectIQ/Devices/ && \
-    rm /tmp/devices.tar.gz && \
+    echo "Downloading known-working Devices from GitHub release..." && \
+    wget -q --show-progress "${DEVICES_URL}" -O /tmp/devices.zip && \
+    echo "Extracting devices to ${GARMIN_HOME}/ConnectIQ/Devices/..." && \
+    unzip -q /tmp/devices.zip -d /tmp/devices-extract && \
+    echo "Checking device structure..." && \
+    if [ -d "/tmp/devices-extract/Devices" ]; then \
+        echo "Found Devices root folder, copying contents..." && \
+        cp -r /tmp/devices-extract/Devices/* ${GARMIN_HOME}/ConnectIQ/Devices/; \
+    else \
+        echo "No Devices root folder, copying all contents..." && \
+        cp -r /tmp/devices-extract/* ${GARMIN_HOME}/ConnectIQ/Devices/; \
+    fi && \
+    rm -rf /tmp/devices.zip /tmp/devices-extract && \
     echo "=== FINAL STATUS ===" && \
     echo "SDK ${SDK_VERSION} installed from Garmin" && \
     echo "Binaries: $(ls ${CONNECTIQ_SDK_PATH}/bin/ 2>/dev/null | wc -l)" && \
-    echo "Devices: $(ls ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null | wc -l)" && \
+    echo "Devices installed: $(ls ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null | wc -l)" && \
     echo "Sample devices:" && \
     ls ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null | head -10
 
