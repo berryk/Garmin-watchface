@@ -178,7 +178,7 @@ take_screenshot() {
     echo "Starting virtual display..."
     DISPLAY_NUM=99
     export DISPLAY=:$DISPLAY_NUM
-    XAUTH_FILE="/tmp/xvfb_auth_cookie_${DISPLAY_NUM}"
+    XAUTH_FILE="/tmp/.Xauthority-${DISPLAY_NUM}"
 
     # Check if we have the necessary binaries
     CONNECTIQ="$SDK_PATH/bin/connectiq"
@@ -194,72 +194,90 @@ take_screenshot() {
         return 0
     fi
 
-    # Start Connect IQ using xvfb-run (includes Xvfb startup)
-    echo "Starting Connect IQ simulator with xvfb-run..."
-    xvfb-run --server-num=$DISPLAY_NUM --auth-file="$XAUTH_FILE" \
-        "$CONNECTIQ" > /tmp/connectiq.log 2>&1 &
+    # Start Connect IQ using xvfb-run in BACKGROUND (your proven approach)
+    echo "Starting Connect IQ simulator with xvfb-run (background)..."
+    xvfb-run -n $DISPLAY_NUM -f "$XAUTH_FILE" "$CONNECTIQ" > /tmp/connectiq.log 2>&1 &
     CONNECTIQ_PID=$!
     echo "Connect IQ started with PID: $CONNECTIQ_PID"
+    sleep 3
 
-    # Give simulator time to boot and initialize
-    sleep 5
-
-    # Load watchface using monkeydo (runs synchronously - waits until app loads)
-    echo "Loading watchface with monkeydo (synchronous)..."
-    if ! "$MONKEYDO" "$PRG_FILE" "$DEVICE" > /tmp/monkeydo.log 2>&1; then
-        echo -e "${YELLOW}⚠${NC} monkeydo failed to load watchface"
-        echo "MonkeyDo logs:"
-        cat /tmp/monkeydo.log 2>/dev/null || echo "No logs"
+    # Check if connectiq is still running
+    if ! kill -0 $CONNECTIQ_PID 2>/dev/null; then
+        echo -e "${YELLOW}⚠${NC} Connect IQ failed to start"
         echo "Connect IQ logs:"
         cat /tmp/connectiq.log 2>/dev/null || echo "No logs"
-        pkill -P $CONNECTIQ_PID 2>/dev/null || true
-        kill $CONNECTIQ_PID 2>/dev/null || true
         return 0
     fi
 
-    # Give app time to render the view
-    echo "Waiting for watchface to render (5 seconds)..."
-    sleep 5
+    # Load watchface using monkeydo in BACKGROUND (your proven approach)
+    echo "Loading watchface with monkeydo (background)..."
+    "$MONKEYDO" "$PRG_FILE" "$DEVICE" > /tmp/monkeydo.log 2>&1 &
+    MONKEYDO_PID=$!
+    echo "MonkeyDo started with PID: $MONKEYDO_PID"
+
+    # Wait for watchface to load and render
+    echo "Waiting for watchface to load and render (10 seconds)..."
+    sleep 10
 
     # Try multiple screenshot methods
     echo "Capturing screenshot..."
     SCREENSHOT_CAPTURED=0
 
-    # Method 1: Try xwd (X Window Dump)
-    if XAUTHORITY="$XAUTH_FILE" xwd -display :$DISPLAY_NUM -root -out /tmp/screenshot.xwd 2>/dev/null; then
+    # Method 1: Try xwd (X Window Dump) - your proven method
+    if XAUTHORITY="$XAUTH_FILE" xwd -display :$DISPLAY_NUM -root -out /tmp/screenshot.xwd 2>/tmp/xwd.log; then
         echo "Converting xwd to PNG..."
-        if convert /tmp/screenshot.xwd "$SCREENSHOT_FILE" 2>/dev/null; then
+        if convert /tmp/screenshot.xwd "$SCREENSHOT_FILE" 2>/tmp/convert.log; then
             echo -e "${GREEN}✓${NC} Screenshot captured with xwd"
             SCREENSHOT_CAPTURED=1
+        else
+            echo -e "${YELLOW}⚠${NC} Image conversion failed"
+            cat /tmp/convert.log 2>/dev/null || true
         fi
+    else
+        echo -e "${YELLOW}⚠${NC} xwd capture failed"
+        cat /tmp/xwd.log 2>/dev/null || true
     fi
 
     # Method 2: Try scrot if xwd failed
     if [ $SCREENSHOT_CAPTURED -eq 0 ]; then
-        if scrot "$SCREENSHOT_FILE" 2>/dev/null; then
+        if scrot "$SCREENSHOT_FILE" 2>/tmp/scrot.log; then
             echo -e "${GREEN}✓${NC} Screenshot captured with scrot"
             SCREENSHOT_CAPTURED=1
+        else
+            echo -e "${YELLOW}⚠${NC} scrot failed"
+            cat /tmp/scrot.log 2>/dev/null || true
         fi
     fi
 
     # Method 3: Try ImageMagick import if scrot failed
     if [ $SCREENSHOT_CAPTURED -eq 0 ]; then
-        if import -window root "$SCREENSHOT_FILE" 2>/dev/null; then
+        if import -window root "$SCREENSHOT_FILE" 2>/tmp/import.log; then
             echo -e "${GREEN}✓${NC} Screenshot captured with import"
             SCREENSHOT_CAPTURED=1
+        else
+            echo -e "${YELLOW}⚠${NC} import failed"
+            cat /tmp/import.log 2>/dev/null || true
         fi
     fi
 
+    # Show logs if all methods failed
     if [ $SCREENSHOT_CAPTURED -eq 0 ]; then
         echo -e "${YELLOW}⚠${NC} All screenshot methods failed"
+        echo ""
+        echo "=== MonkeyDo logs ==="
+        cat /tmp/monkeydo.log 2>/dev/null || echo "No logs"
+        echo ""
+        echo "=== Connect IQ logs ==="
+        cat /tmp/connectiq.log 2>/dev/null || echo "No logs"
     fi
 
     # Cleanup
     echo "Cleaning up processes..."
+    kill $MONKEYDO_PID 2>/dev/null || true
+    kill $CONNECTIQ_PID 2>/dev/null || true
     pkill monkeydo 2>/dev/null || true
     pkill simulator 2>/dev/null || true
     pkill connectiq 2>/dev/null || true
-    kill $CONNECTIQ_PID 2>/dev/null || true
     pkill -P $CONNECTIQ_PID 2>/dev/null || true
 
     if [ -f "$SCREENSHOT_FILE" ]; then
