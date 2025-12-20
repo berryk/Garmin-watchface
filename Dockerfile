@@ -1,8 +1,8 @@
 # Dockerfile for Garmin Connect IQ Development
-# Ubuntu 18.04 (Bionic) - Has libwebkitgtk-1.0-0 in apt repos
-# Critical libraries: libwebkitgtk-1.0-0, libpng12-0, libjpeg-turbo8
+# Ubuntu 20.04 - Required for GLIBC 2.28+ needed by SDK 8.4.0 simulator
+# Simulator needs: libwebkit2gtk-4.0-37, libjpeg8, modern GLIBC
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -11,7 +11,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Use standard Garmin SDK directory structure
 ENV GARMIN_HOME=/root/.Garmin
 ENV CONNECTIQ_SDK_PATH=/root/.Garmin/ConnectIQ/Sdks/sdk
-ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV PATH="${CONNECTIQ_SDK_PATH}/bin:${JAVA_HOME}/bin:${PATH}"
 
 # Install system dependencies
@@ -24,8 +24,8 @@ RUN apt-get update && apt-get install -y \
     git \
     unzip \
     coreutils \
-    # Java 11 (SDK 8.4.0 requires Java 11+)
-    openjdk-11-jdk \
+    # Java 17 for Connect IQ SDK
+    openjdk-17-jdk \
     # OpenSSL for developer key generation
     openssl \
     # Debugging and network tools
@@ -40,14 +40,13 @@ RUN apt-get update && apt-get install -y \
     x11-apps \
     scrot \
     imagemagick \
-    # Critical: Old WebKit 1.0 AND Modern WebKit 4.0 (simulator needs BOTH!)
-    libwebkitgtk-1.0-0 \
+    # WebKit 4.0 for simulator UI (verified by strace)
     libwebkit2gtk-4.0-37 \
     libjavascriptcoregtk-4.0-18 \
+    # JPEG library for simulator (verified by strace)
+    libjpeg-turbo8 \
     # USB library for simulator
     libusb-1.0-0 \
-    # JPEG library (turbo variant in 18.04)
-    libjpeg-turbo8 \
     # GTK and supporting libraries
     libgtk-3-0 \
     libsecret-1-0 \
@@ -66,12 +65,8 @@ RUN apt-get update && apt-get install -y \
     # Clean up
     && rm -rf /var/lib/apt/lists/*
 
-# Manually install libpng12 (fixes "image.IsOk" crash)
-# This library was removed from Ubuntu 18.04+, fetch from security repo
-RUN wget -q http://security.ubuntu.com/ubuntu/pool/main/libp/libpng/libpng12-0_1.2.54-1ubuntu1.1_amd64.deb -O /tmp/libpng12.deb && \
-    dpkg -i /tmp/libpng12.deb && \
-    rm /tmp/libpng12.deb && \
-    echo "libpng12-0 installed successfully"
+# Note: Simulator uses libpng16 (native to Ubuntu 20.04), not libpng12
+# Verified by strace showing successful load of libpng16.so.16
 
 # Create directory structure for SDK (standard Garmin layout)
 RUN mkdir -p ${CONNECTIQ_SDK_PATH} && \
