@@ -104,6 +104,7 @@ COPY manifest.xml /tmp/manifest.xml
 RUN set -ex && \
     mkdir -p ${GARMIN_HOME}/ConnectIQ/Sdks && \
     mkdir -p ${GARMIN_HOME}/ConnectIQ/Devices && \
+    mkdir -p ${GARMIN_HOME}/ConnectIQ/Fonts && \
     if [ -n "$GARMIN_EMAIL" ] && [ -n "$GARMIN_PASSWORD" ]; then \
         echo "Installing SDK and devices using connect-iq-sdk-manager..." && \
         export GARMIN_USERNAME="$GARMIN_EMAIL" && \
@@ -120,11 +121,11 @@ RUN set -ex && \
             ln -sf "$SDK_INSTALLED" ${CONNECTIQ_SDK_PATH}; \
         fi && \
         echo "Downloading devices from manifest..." && \
-        connect-iq-sdk-manager device download --manifest=/tmp/manifest.xml || \
+        connect-iq-sdk-manager device download --manifest=/tmp/manifest.xml --include-fonts || \
         (echo "Manifest download failed, installing individual devices..." && \
         for device in $DEVICES; do \
             echo "Installing device: $device" && \
-            connect-iq-sdk-manager device install "$device" || echo "Warning: Failed to install $device"; \
+            connect-iq-sdk-manager device install "$device" --include-fonts || echo "Warning: Failed to install $device"; \
         done); \
     else \
         echo "No Garmin credentials provided, using fallback SDK download..." && \
@@ -149,6 +150,7 @@ RUN set -ex && \
     echo "SDK ${SDK_VERSION} installed" && \
     echo "Binaries: $(ls ${CONNECTIQ_SDK_PATH}/bin/ 2>/dev/null | wc -l)" && \
     echo "Devices installed: $(ls ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null | wc -l)" && \
+    echo "Fonts installed: $(ls ${GARMIN_HOME}/ConnectIQ/Fonts/ 2>/dev/null | wc -l)" && \
     echo "Sample devices:" && \
     ls ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null | head -10 || echo "No devices found"
 
