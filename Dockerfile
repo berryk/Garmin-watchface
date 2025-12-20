@@ -1,8 +1,8 @@
 # Dockerfile for Garmin Connect IQ Development
-# Ubuntu 20.04 with manually installed libpng12 for simulator compatibility
-# Includes all dependencies for building watch faces and taking screenshots
+# Ubuntu 18.04 (Bionic) - Has libwebkitgtk-1.0-0 in apt repos
+# Critical libraries: libwebkitgtk-1.0-0, libpng12-0, libjpeg-turbo8
 
-FROM ubuntu:20.04
+FROM ubuntu:18.04
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -11,10 +11,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Use standard Garmin SDK directory structure
 ENV GARMIN_HOME=/root/.Garmin
 ENV CONNECTIQ_SDK_PATH=/root/.Garmin/ConnectIQ/Sdks/sdk
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
 ENV PATH="${CONNECTIQ_SDK_PATH}/bin:${JAVA_HOME}/bin:${PATH}"
 
-# Install base dependencies
+# Install system dependencies
+# libwebkitgtk-1.0-0 is critical for the simulator UI and available in 18.04 repos
 RUN apt-get update && apt-get install -y \
     # Build essentials
     wget \
@@ -23,8 +24,8 @@ RUN apt-get update && apt-get install -y \
     git \
     unzip \
     coreutils \
-    # Java 17 for Connect IQ SDK
-    openjdk-17-jdk \
+    # Java 11 (SDK 8.4.0 requires Java 11+)
+    openjdk-11-jdk \
     # OpenSSL for developer key generation
     openssl \
     # Debugging and network tools
@@ -37,18 +38,19 @@ RUN apt-get update && apt-get install -y \
     x11-apps \
     scrot \
     imagemagick \
-    # GTK and WebKit dependencies for simulator
+    # Critical: Old WebKit for simulator UI (available in 18.04 apt repos!)
+    libwebkitgtk-1.0-0 \
+    # USB library for simulator
+    libusb-1.0-0 \
+    # JPEG library (turbo variant in 18.04)
+    libjpeg-turbo8 \
+    # GTK and supporting libraries
     libgtk-3-0 \
     libsecret-1-0 \
     libglib2.0-0 \
     libgdk-pixbuf2.0-0 \
     libcairo2 \
     libpango-1.0-0 \
-    libjavascriptcoregtk-4.0-18 \
-    gir1.2-webkit2-4.0 \
-    libwebkit2gtk-4.0-37 \
-    # USB library for simulator
-    libusb-1.0-0 \
     # Additional X11 libraries
     libx11-6 \
     libxext6 \
@@ -60,15 +62,12 @@ RUN apt-get update && apt-get install -y \
     # Clean up
     && rm -rf /var/lib/apt/lists/*
 
-# Manually install old libraries required by Garmin simulator (not in Ubuntu 20.04 repos)
-# These specific versions are critical for the simulator to work correctly
-RUN wget -q http://archive.ubuntu.com/ubuntu/pool/main/libp/libpng/libpng12-0_1.2.54-1ubuntu1_amd64.deb -O /tmp/libpng12.deb && \
-    wget -q http://archive.ubuntu.com/ubuntu/pool/main/libj/libjpeg8/libjpeg8_8c-2ubuntu8_amd64.deb -O /tmp/libjpeg8.deb && \
-    wget -q http://archive.ubuntu.com/ubuntu/pool/universe/w/webkitgtk/libwebkitgtk-1.0-0_2.4.11-3ubuntu3_amd64.deb -O /tmp/libwebkitgtk.deb && \
-    dpkg -i /tmp/libpng12.deb /tmp/libjpeg8.deb /tmp/libwebkitgtk.deb || true && \
-    apt-get install -f -y && \
-    rm /tmp/*.deb && \
-    echo "Old libraries installed: libpng12-0, libjpeg8, libwebkitgtk-1.0-0"
+# Manually install libpng12 (fixes "image.IsOk" crash)
+# This library was removed from Ubuntu 18.04+, fetch from security repo
+RUN wget -q http://security.ubuntu.com/ubuntu/pool/main/libp/libpng/libpng12-0_1.2.54-1ubuntu1.1_amd64.deb -O /tmp/libpng12.deb && \
+    dpkg -i /tmp/libpng12.deb && \
+    rm /tmp/libpng12.deb && \
+    echo "libpng12-0 installed successfully"
 
 # Create directory structure for SDK (standard Garmin layout)
 RUN mkdir -p ${CONNECTIQ_SDK_PATH} && \
