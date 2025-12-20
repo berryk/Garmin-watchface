@@ -7,7 +7,9 @@ FROM ubuntu:20.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Set up environment variables
-ENV CONNECTIQ_SDK_PATH=/opt/connectiq-sdk
+# Use standard Garmin SDK directory structure
+ENV GARMIN_HOME=/root/.Garmin
+ENV CONNECTIQ_SDK_PATH=/root/.Garmin/ConnectIQ/Sdks/sdk
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV PATH="${CONNECTIQ_SDK_PATH}/bin:${JAVA_HOME}/bin:${PATH}"
 
@@ -49,8 +51,9 @@ RUN apt-get update && apt-get install -y \
     # Clean up
     && rm -rf /var/lib/apt/lists/*
 
-# Create directory for SDK
-RUN mkdir -p ${CONNECTIQ_SDK_PATH}
+# Create directory structure for SDK (standard Garmin layout)
+RUN mkdir -p ${CONNECTIQ_SDK_PATH} && \
+    mkdir -p ${GARMIN_HOME}/ConnectIQ/Devices
 
 # Set working directory
 WORKDIR /workspace

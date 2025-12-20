@@ -6,7 +6,9 @@ set -e
 
 # Configuration
 SDK_URL="https://github.com/berryk/Garmin-watchface/releases/download/sdk-v8.4.0-linux/connectiq-sdk-linux-bundle.tar.gz"
-SDK_PATH="${CONNECTIQ_SDK_PATH:-/opt/connectiq-sdk}"
+GARMIN_HOME="${GARMIN_HOME:-$HOME/.Garmin}"
+SDK_PATH="${CONNECTIQ_SDK_PATH:-$GARMIN_HOME/ConnectIQ/Sdks/sdk}"
+DEVICES_PATH="${GARMIN_HOME}/ConnectIQ/Devices"
 WORKSPACE="${WORKSPACE:-/workspace}"
 DEVICE="${DEVICE:-fenix7}"
 
@@ -33,17 +35,33 @@ setup_sdk() {
 
     echo "Downloading Connect IQ SDK bundle (154MB with 162 devices)..."
     mkdir -p "$SDK_PATH"
+    mkdir -p "$DEVICES_PATH"
+
     wget -q --show-progress "$SDK_URL" -O /tmp/sdk.tar.gz
 
     echo "Extracting SDK..."
     tar -xzf /tmp/sdk.tar.gz -C "$SDK_PATH"
     rm /tmp/sdk.tar.gz
 
+    # Move device files to the standard location where monkeybrains expects them
+    # The SDK bundle includes Devices in the extracted directory
+    if [ -d "$SDK_PATH/Devices" ]; then
+        echo "Setting up device definitions..."
+        cp -r "$SDK_PATH/Devices/"* "$DEVICES_PATH/" 2>/dev/null || true
+        echo "Device count: $(ls $DEVICES_PATH/ 2>/dev/null | wc -l)"
+    fi
+
     # Make scripts executable
     chmod +x "$SDK_PATH/bin/"* 2>/dev/null || true
 
     echo -e "${GREEN}✓${NC} SDK installed successfully"
-    echo "SDK binary count: $(ls $SDK_PATH/bin/ | wc -l)"
+    echo "SDK binary count: $(ls $SDK_PATH/bin/ 2>/dev/null | wc -l)"
+
+    # Debug: Show SDK structure
+    echo "SDK structure:"
+    ls -la "$SDK_PATH/" 2>/dev/null | head -10
+    echo "Devices location: $DEVICES_PATH"
+    ls "$DEVICES_PATH/" 2>/dev/null | head -5
 }
 
 # Function to generate developer key
@@ -79,6 +97,14 @@ build_watchface() {
 
     echo "Using monkeybrains.jar: $MONKEYBRAINS"
 
+    # Set environment variable that monkeybrains uses to find the SDK
+    export MB_HOME="$(dirname $SDK_PATH)"
+
+    # Debug: Show paths
+    echo "MB_HOME: $MB_HOME"
+    echo "SDK_PATH: $SDK_PATH"
+    echo "DEVICES_PATH: $DEVICES_PATH"
+
     # Build the watchface
     OUTPUT_FILE="bin/GMTWorldTime-${DEVICE}.prg"
 
@@ -89,6 +115,8 @@ build_watchface() {
         -y developer_key.der \
         -w 2>&1 || {
             echo -e "${RED}✗${NC} Build failed, showing detailed error..."
+            echo "Checking device file existence:"
+            ls -la "$DEVICES_PATH/$DEVICE"* 2>/dev/null || echo "No device file found for $DEVICE"
             java -jar "$MONKEYBRAINS" \
                 -o "$OUTPUT_FILE" \
                 -f monkey.jungle \
