@@ -29,8 +29,7 @@
             <iq:product id="fenix7spro"/>
             <iq:product id="fenix7x"/>
             <iq:product id="fenix7xpro"/>
-            <iq:product id="fenix8"/>
-            
+
             <!-- Forerunner Series -->
             <iq:product id="fr245"/>
             <iq:product id="fr245m"/>
@@ -65,10 +64,7 @@
             <iq:product id="venusq2m"/>
             <iq:product id="venusqm"/>
             <iq:product id="venux1"/>
-            
-            <!-- Lily Series -->
-            <iq:product id="lily2"/>
-            
+
             <!-- Vivoactive Series -->
             <iq:product id="vivoactive3"/>
             <iq:product id="vivoactive3d"/>
@@ -86,8 +82,7 @@
             
             <!-- Enduro Series -->
             <iq:product id="enduro"/>
-            <iq:product id="enduro2"/>
-            
+
             <!-- Instinct Series -->
             <iq:product id="instinct2"/>
             <iq:product id="instinct2s"/>
@@ -117,24 +112,6 @@
             <iq:product id="descentg1"/>
             <iq:product id="descentmk2"/>
             <iq:product id="descentmk2s"/>
-            <iq:product id="descentmk3"/>
-            
-            <!-- Approach Golf Series -->
-            <iq:product id="approachs6042mm"/>
-            <iq:product id="approachs6247mm"/>
-            <iq:product id="approachs7042mm"/>
-            <iq:product id="approachs7047mm"/>
-            
-            <!-- Tactix Series -->
-            <iq:product id="tactix7"/>
-            <iq:product id="tactix7pro"/>
-            <iq:product id="tactixdelta"/>
-            
-            <!-- Quatix Marine Series -->
-            <iq:product id="quatix6"/>
-            <iq:product id="quatix6x"/>
-            <iq:product id="quatix7"/>
-            <iq:product id="quatix7x"/>
             
             <!-- Legacy/Captain Marvel/Rey Series -->
             <iq:product id="legacyherocaptainmarvel"/>

@@ -44,6 +44,8 @@ RUN apt-get update && apt-get install -y \
     libjavascriptcoregtk-4.0-18 \
     gir1.2-webkit2-4.0 \
     libwebkit2gtk-4.0-dev \
+    # USB library for simulator
+    libusb-1.0-0 \
     # Additional X11 libraries
     libx11-6 \
     libxext6 \
@@ -71,6 +73,16 @@ RUN wget -q https://github.com/berryk/Garmin-watchface/releases/download/sdk-v8.
     chmod +x ${CONNECTIQ_SDK_PATH}/bin/* 2>/dev/null || true && \
     rm /tmp/sdk.tar.gz && \
     echo "SDK installed with $(ls ${CONNECTIQ_SDK_PATH}/bin/ | wc -l) binaries and $(ls ${GARMIN_HOME}/ConnectIQ/Devices/ | wc -l) devices"
+
+# Generate developer key (for CI builds only, not for distribution)
+# This saves ~5-10 seconds per build
+RUN mkdir -p /root/.garmin-keys && \
+    openssl genrsa -out /root/.garmin-keys/developer_key.pem 4096 && \
+    openssl pkcs8 -topk8 -inform PEM -outform DER \
+        -in /root/.garmin-keys/developer_key.pem \
+        -out /root/.garmin-keys/developer_key.der \
+        -nocrypt && \
+    echo "Developer key generated and cached"
 
 # Set working directory
 WORKDIR /workspace

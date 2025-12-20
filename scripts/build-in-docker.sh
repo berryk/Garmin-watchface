@@ -68,11 +68,22 @@ setup_sdk() {
 generate_key() {
     cd "$WORKSPACE"
 
+    # Check if keys already exist in workspace
     if [ -f "developer_key.pem" ] && [ -f "developer_key.der" ]; then
-        echo -e "${GREEN}✓${NC} Developer keys already exist"
+        echo -e "${GREEN}✓${NC} Developer keys already exist in workspace"
         return 0
     fi
 
+    # Use pre-generated keys from Docker image if available
+    if [ -f "/root/.garmin-keys/developer_key.pem" ] && [ -f "/root/.garmin-keys/developer_key.der" ]; then
+        echo "Using pre-generated developer keys from Docker image..."
+        cp /root/.garmin-keys/developer_key.pem developer_key.pem
+        cp /root/.garmin-keys/developer_key.der developer_key.der
+        echo -e "${GREEN}✓${NC} Developer keys copied from cache"
+        return 0
+    fi
+
+    # Generate new keys if not available
     echo "Generating developer key (4096-bit RSA)..."
     openssl genrsa -out developer_key.pem 4096
     openssl pkcs8 -topk8 -inform PEM -outform DER -in developer_key.pem -out developer_key.der -nocrypt
