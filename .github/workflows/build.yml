@@ -44,7 +44,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder
           tags: |
-            type=sha,prefix=
+            type=sha
             type=ref,event=branch
             type=ref,event=pr
             type=raw,value=latest,enable={{is_default_branch}}
