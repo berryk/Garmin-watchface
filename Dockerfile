@@ -73,17 +73,20 @@ RUN apt-get update && apt-get install -y \
 RUN set -ex && \
     ARCH="$(uname -m)" && \
     case "$ARCH" in \
-        x86_64) ARCH="x86_64" ;; \
-        aarch64) ARCH="arm64" ;; \
+        x86_64) DOWNLOAD_ARCH="x86_64" ;; \
+        aarch64) DOWNLOAD_ARCH="ARM64" ;; \
         *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
     esac && \
-    LATEST_VERSION=$(curl -s https://api.github.com/repos/lindell/connect-iq-sdk-manager-cli/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') && \
-    echo "Installing connect-iq-sdk-manager-cli ${LATEST_VERSION} for ${ARCH}..." && \
-    curl -fsSL "https://github.com/lindell/connect-iq-sdk-manager-cli/releases/download/${LATEST_VERSION}/connect-iq-sdk-manager-cli_Linux_${ARCH}.tar.gz" -o /tmp/ciq-manager.tar.gz && \
+    LATEST_TAG=$(curl -s https://api.github.com/repos/lindell/connect-iq-sdk-manager-cli/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') && \
+    LATEST_VERSION="${LATEST_TAG#v}" && \
+    echo "Installing connect-iq-sdk-manager-cli ${LATEST_VERSION} for ${DOWNLOAD_ARCH}..." && \
+    DOWNLOAD_URL="https://github.com/lindell/connect-iq-sdk-manager-cli/releases/download/${LATEST_TAG}/connect-iq-sdk-manager-cli_${LATEST_VERSION}_Linux_${DOWNLOAD_ARCH}.tar.gz" && \
+    echo "Download URL: ${DOWNLOAD_URL}" && \
+    curl -fsSL "${DOWNLOAD_URL}" -o /tmp/ciq-manager.tar.gz && \
     tar -xzf /tmp/ciq-manager.tar.gz -C /tmp && \
     mv /tmp/connect-iq-sdk-manager /usr/local/bin/connect-iq-sdk-manager && \
     chmod +x /usr/local/bin/connect-iq-sdk-manager && \
-    rm -rf /tmp/ciq-manager.tar.gz /tmp/connect-iq-sdk-manager && \
+    rm -rf /tmp/ciq-manager.tar.gz && \
     connect-iq-sdk-manager --version
 
 # Build arguments for optional Garmin credentials (NOT stored in image)
