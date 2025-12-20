@@ -178,6 +178,7 @@ take_screenshot() {
     echo "Starting virtual display..."
     DISPLAY_NUM=99
     export DISPLAY=:$DISPLAY_NUM
+    XAUTH_FILE="/tmp/.Xauthority-$DISPLAY_NUM"
 
     # Check if we have the necessary binaries
     CONNECTIQ="$SDK_PATH/bin/connectiq"
@@ -193,22 +194,9 @@ take_screenshot() {
         return 0
     fi
 
-    # Check simulator dependencies first
-    echo "Checking simulator dependencies..."
-    if ! ldd "$CONNECTIQ" > /tmp/ldd-check.txt 2>&1; then
-        echo -e "${YELLOW}⚠${NC} Could not check simulator dependencies"
-    else
-        if grep -q "not found" /tmp/ldd-check.txt; then
-            echo -e "${YELLOW}⚠${NC} Missing libraries for simulator:"
-            grep "not found" /tmp/ldd-check.txt
-            echo "Skipping screenshot due to missing dependencies"
-            return 0
-        fi
-    fi
-
     # Start Connect IQ using xvfb-run (includes Xvfb startup)
     echo "Starting Connect IQ simulator with xvfb-run..."
-    xvfb-run -n $DISPLAY_NUM -s "-screen 0 1024x768x24" "$CONNECTIQ" > /tmp/connectiq.log 2>&1 &
+    xvfb-run -n $DISPLAY_NUM -f "$XAUTH_FILE" -s "-screen 0 1024x768x24" "$CONNECTIQ" > /tmp/connectiq.log 2>&1 &
     CONNECTIQ_PID=$!
     echo "Connect IQ started with PID: $CONNECTIQ_PID"
     sleep 5
@@ -220,25 +208,42 @@ take_screenshot() {
     echo "Waiting for watchface to load and render (10 seconds)..."
     sleep 10
 
-    # Capture screenshot using xwd and convert to PNG
-    echo "Capturing screenshot with xwd..."
-    XAUTHORITY=/tmp/.Xauthority xwd -display :$DISPLAY_NUM -root > /tmp/screenshot.xwd 2>/dev/null || {
-        echo -e "${YELLOW}⚠${NC} xwd screenshot capture failed"
-        pkill -P $CONNECTIQ_PID 2>/dev/null || true
-        kill $CONNECTIQ_PID 2>/dev/null || true
-        kill $MONKEYDO_PID 2>/dev/null || true
-        return 0
-    }
+    # Try multiple screenshot methods (xwd, scrot, import)
+    echo "Capturing screenshot..."
+    SCREENSHOT_CAPTURED=0
 
-    # Convert XWD to PNG
-    echo "Converting screenshot to PNG..."
-    convert /tmp/screenshot.xwd "$SCREENSHOT_FILE" 2>/dev/null || {
-        echo -e "${YELLOW}⚠${NC} Image conversion failed"
-        pkill -P $CONNECTIQ_PID 2>/dev/null || true
-        kill $CONNECTIQ_PID 2>/dev/null || true
-        kill $MONKEYDO_PID 2>/dev/null || true
-        return 0
-    }
+    # Method 1: Try xwd (X Window Dump)
+    if XAUTHORITY="$XAUTH_FILE" xwd -display :$DISPLAY_NUM -root > /tmp/screenshot.xwd 2>/dev/null; then
+        echo "Converting xwd to PNG..."
+        if convert /tmp/screenshot.xwd "$SCREENSHOT_FILE" 2>/dev/null; then
+            echo -e "${GREEN}✓${NC} Screenshot captured with xwd"
+            SCREENSHOT_CAPTURED=1
+        fi
+    fi
+
+    # Method 2: Try scrot if xwd failed
+    if [ $SCREENSHOT_CAPTURED -eq 0 ]; then
+        if scrot "$SCREENSHOT_FILE" 2>/dev/null; then
+            echo -e "${GREEN}✓${NC} Screenshot captured with scrot"
+            SCREENSHOT_CAPTURED=1
+        fi
+    fi
+
+    # Method 3: Try ImageMagick import if scrot failed
+    if [ $SCREENSHOT_CAPTURED -eq 0 ]; then
+        if import -window root "$SCREENSHOT_FILE" 2>/dev/null; then
+            echo -e "${GREEN}✓${NC} Screenshot captured with import"
+            SCREENSHOT_CAPTURED=1
+        fi
+    fi
+
+    if [ $SCREENSHOT_CAPTURED -eq 0 ]; then
+        echo -e "${YELLOW}⚠${NC} All screenshot methods failed"
+        echo "MonkeyDo logs:"
+        cat /tmp/monkeydo.log 2>/dev/null || echo "No logs"
+        echo "Connect IQ logs:"
+        cat /tmp/connectiq.log 2>/dev/null || echo "No logs"
+    fi
 
     # Cleanup
     echo "Cleaning up processes..."
