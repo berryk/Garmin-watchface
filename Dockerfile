@@ -77,24 +77,32 @@ ENV SDK_URL=https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk
 ENV DEVICES_URL=https://github.com/berryk/Garmin-watchface/releases/download/devices-v1.0.0/connectiq-devices.zip
 
 # Create directory structure for SDK (standard Garmin layout)
-RUN mkdir -p ${GARMIN_HOME}/ConnectIQ/Sdks && \
+RUN set -ex && \
+    mkdir -p ${GARMIN_HOME}/ConnectIQ/Sdks && \
     mkdir -p ${GARMIN_HOME}/ConnectIQ/Devices && \
     echo "Downloading official Connect IQ SDK ${SDK_VERSION} from Garmin..." && \
     wget -q --show-progress "${SDK_URL}" -O /tmp/sdk.zip && \
+    echo "SDK download complete, size: $(ls -lh /tmp/sdk.zip | awk '{print $5}')" && \
     echo "Extracting SDK..." && \
     unzip -q /tmp/sdk.zip -d /tmp/sdk-extract && \
     echo "Finding SDK root..." && \
     SDK_ROOT=$(find /tmp/sdk-extract -name "bin" -type d -exec dirname {} \; | head -1) && \
     echo "SDK root found at: $SDK_ROOT" && \
+    test -n "$SDK_ROOT" || (echo "ERROR: SDK_ROOT is empty!" && exit 1) && \
     echo "Moving SDK to ${CONNECTIQ_SDK_PATH}..." && \
     mv "$SDK_ROOT" ${CONNECTIQ_SDK_PATH} && \
+    chmod +x ${CONNECTIQ_SDK_PATH}/bin/* 2>/dev/null || true && \
     echo "Binaries installed: $(ls ${CONNECTIQ_SDK_PATH}/bin/ 2>/dev/null | wc -l)" && \
-    rm -rf /tmp/sdk.zip /tmp/sdk-extract && \
+    rm -rf /tmp/sdk.zip /tmp/sdk-extract
+
+RUN set -ex && \
     echo "Downloading known-working Devices from GitHub release..." && \
     wget -q --show-progress "${DEVICES_URL}" -O /tmp/devices.zip && \
+    echo "Devices download complete, size: $(ls -lh /tmp/devices.zip | awk '{print $5}')" && \
     echo "Extracting devices to ${GARMIN_HOME}/ConnectIQ/Devices/..." && \
     unzip -q /tmp/devices.zip -d /tmp/devices-extract && \
     echo "Checking device structure..." && \
+    ls -la /tmp/devices-extract/ && \
     if [ -d "/tmp/devices-extract/Devices" ]; then \
         echo "Found Devices root folder, copying contents..." && \
         cp -r /tmp/devices-extract/Devices/* ${GARMIN_HOME}/ConnectIQ/Devices/; \
