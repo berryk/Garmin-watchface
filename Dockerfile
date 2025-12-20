@@ -73,10 +73,8 @@ RUN apt-get update && apt-get install -y \
 # SDK links: https://developer.garmin.com/downloads/connect-iq/sdks/sdks.json
 ENV SDK_VERSION=8.4.0
 ENV SDK_URL=https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-lin-8.4.0-2025-12-03-5122605dc.zip
-# Use known-working Devices folder from GitHub release
-ENV DEVICES_URL=https://github.com/berryk/Garmin-watchface/releases/download/devices-v1.0.0/connectiq-devices.zip
 
-# Create directory structure for SDK (standard Garmin layout)
+# Download, extract and install SDK with device definitions
 RUN set -ex && \
     mkdir -p ${GARMIN_HOME}/ConnectIQ/Sdks && \
     mkdir -p ${GARMIN_HOME}/ConnectIQ/Devices && \
@@ -89,44 +87,27 @@ RUN set -ex && \
     SDK_ROOT=$(find /tmp/sdk-extract -name "bin" -type d -exec dirname {} \; | head -1) && \
     echo "SDK root found at: $SDK_ROOT" && \
     test -n "$SDK_ROOT" || (echo "ERROR: SDK_ROOT is empty!" && exit 1) && \
+    echo "Checking for device definitions in SDK..." && \
+    if [ -d "$SDK_ROOT/../Devices" ]; then \
+        echo "Found Devices folder alongside SDK, copying..." && \
+        cp -r "$SDK_ROOT/../Devices/"* ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null || true; \
+    elif [ -d "$SDK_ROOT/Devices" ]; then \
+        echo "Found Devices folder inside SDK, copying..." && \
+        cp -r "$SDK_ROOT/Devices/"* ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null || true; \
+    else \
+        echo "WARNING: No Devices folder found in SDK extraction" && \
+        find /tmp/sdk-extract -name "*evice*" -type d || true; \
+    fi && \
     echo "Moving SDK to ${CONNECTIQ_SDK_PATH}..." && \
     mv "$SDK_ROOT" ${CONNECTIQ_SDK_PATH} && \
     chmod +x ${CONNECTIQ_SDK_PATH}/bin/* 2>/dev/null || true && \
-    echo "Binaries installed: $(ls ${CONNECTIQ_SDK_PATH}/bin/ 2>/dev/null | wc -l)" && \
-    rm -rf /tmp/sdk.zip /tmp/sdk-extract
-
-# Download and install devices from GitHub release
-RUN echo "Downloading known-working Devices from GitHub release..." && \
-    wget --show-progress "${DEVICES_URL}" -O /tmp/devices.zip && \
-    echo "Devices download complete, size: $(ls -lh /tmp/devices.zip | awk '{print $5}')" && \
-    echo "Verifying download..." && \
-    test -f /tmp/devices.zip || (echo "ERROR: Download failed!" && exit 1) && \
-    file /tmp/devices.zip && \
-    unzip -t /tmp/devices.zip
-
-# Extract and install devices
-RUN echo "Extracting devices to ${GARMIN_HOME}/ConnectIQ/Devices/..." && \
-    unzip -q /tmp/devices.zip -d /tmp/devices-extract && \
-    echo "Checking device structure..." && \
-    ls -la /tmp/devices-extract/
-
-# Copy devices to correct location
-RUN if [ -d "/tmp/devices-extract/Devices" ]; then \
-        echo "Found Devices root folder, copying contents..." && \
-        cp -r /tmp/devices-extract/Devices/* ${GARMIN_HOME}/ConnectIQ/Devices/; \
-    else \
-        echo "No Devices root folder, copying all contents..." && \
-        cp -r /tmp/devices-extract/* ${GARMIN_HOME}/ConnectIQ/Devices/; \
-    fi
-
-# Cleanup and verify installation
-RUN rm -rf /tmp/devices.zip /tmp/devices-extract && \
-    echo "=== FINAL STATUS ===" && \
+    echo "=== INSTALLATION STATUS ===" && \
     echo "SDK ${SDK_VERSION} installed from Garmin" && \
     echo "Binaries: $(ls ${CONNECTIQ_SDK_PATH}/bin/ 2>/dev/null | wc -l)" && \
     echo "Devices installed: $(ls ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null | wc -l)" && \
     echo "Sample devices:" && \
-    ls ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null | head -10
+    ls ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null | head -10 || echo "No devices found" && \
+    rm -rf /tmp/sdk.zip /tmp/sdk-extract
 
 # Generate developer key (for CI builds only, not for distribution)
 # This saves ~5-10 seconds per build
