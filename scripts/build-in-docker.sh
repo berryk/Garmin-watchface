@@ -176,61 +176,78 @@ take_screenshot() {
     fi
 
     echo "Starting virtual display..."
-    # Start Xvfb in background
-    Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-    XVFB_PID=$!
-    export DISPLAY=:99
-    sleep 3
+    DISPLAY_NUM=99
+    export DISPLAY=:$DISPLAY_NUM
 
-    # Verify X server is running
-    if ! xdpyinfo -display :99 > /dev/null 2>&1; then
-        echo -e "${YELLOW}⚠${NC} X server failed to start, skipping screenshot"
-        kill $XVFB_PID 2>/dev/null || true
+    # Check if we have the necessary binaries
+    CONNECTIQ="$SDK_PATH/bin/connectiq"
+    MONKEYDO="$SDK_PATH/bin/monkeydo"
+
+    if [ ! -f "$CONNECTIQ" ]; then
+        echo -e "${YELLOW}⚠${NC} connectiq binary not found, trying simulator..."
+        CONNECTIQ="$SDK_PATH/bin/simulator"
+    fi
+
+    if [ ! -f "$MONKEYDO" ]; then
+        echo -e "${YELLOW}⚠${NC} monkeydo binary not found, skipping screenshot"
         return 0
     fi
 
-    echo "Starting simulator..."
-    chmod +x "$SIMULATOR" 2>/dev/null || true
-
     # Check simulator dependencies first
     echo "Checking simulator dependencies..."
-    if ! ldd "$SIMULATOR" > /tmp/ldd-check.txt 2>&1; then
+    if ! ldd "$CONNECTIQ" > /tmp/ldd-check.txt 2>&1; then
         echo -e "${YELLOW}⚠${NC} Could not check simulator dependencies"
     else
         if grep -q "not found" /tmp/ldd-check.txt; then
             echo -e "${YELLOW}⚠${NC} Missing libraries for simulator:"
             grep "not found" /tmp/ldd-check.txt
             echo "Skipping screenshot due to missing dependencies"
-            kill $XVFB_PID 2>/dev/null || true
             return 0
         fi
     fi
 
-    # Start simulator in background with the PRG file loaded
-    echo "Starting simulator with watchface..."
-    "$SIMULATOR" "$PRG_FILE" > /tmp/simulator.log 2>&1 &
-    SIMULATOR_PID=$!
-    echo "Simulator started with PID: $SIMULATOR_PID"
+    # Start Connect IQ using xvfb-run (includes Xvfb startup)
+    echo "Starting Connect IQ simulator with xvfb-run..."
+    xvfb-run -n $DISPLAY_NUM -s "-screen 0 1024x768x24" "$CONNECTIQ" > /tmp/connectiq.log 2>&1 &
+    CONNECTIQ_PID=$!
+    echo "Connect IQ started with PID: $CONNECTIQ_PID"
+    sleep 5
 
-    # Give simulator time to load and render
-    echo "Waiting for simulator to load watchface (20 seconds)..."
-    sleep 20
+    # Load watchface using monkeydo
+    echo "Loading watchface with monkeydo..."
+    "$MONKEYDO" "$PRG_FILE" "$DEVICE" > /tmp/monkeydo.log 2>&1 &
+    MONKEYDO_PID=$!
+    echo "Waiting for watchface to load and render (10 seconds)..."
+    sleep 10
 
-    # Capture screenshot
-    echo "Capturing screenshot..."
-    scrot "$SCREENSHOT_FILE" 2>/dev/null || {
-        # Try alternative screenshot method
-        import -window root "$SCREENSHOT_FILE" 2>/dev/null || {
-            echo -e "${YELLOW}⚠${NC} Screenshot capture failed"
-            kill $SIMULATOR_PID 2>/dev/null || true
-            kill $XVFB_PID 2>/dev/null || true
-            return 0
-        }
+    # Capture screenshot using xwd and convert to PNG
+    echo "Capturing screenshot with xwd..."
+    XAUTHORITY=/tmp/.Xauthority xwd -display :$DISPLAY_NUM -root > /tmp/screenshot.xwd 2>/dev/null || {
+        echo -e "${YELLOW}⚠${NC} xwd screenshot capture failed"
+        pkill -P $CONNECTIQ_PID 2>/dev/null || true
+        kill $CONNECTIQ_PID 2>/dev/null || true
+        kill $MONKEYDO_PID 2>/dev/null || true
+        return 0
+    }
+
+    # Convert XWD to PNG
+    echo "Converting screenshot to PNG..."
+    convert /tmp/screenshot.xwd "$SCREENSHOT_FILE" 2>/dev/null || {
+        echo -e "${YELLOW}⚠${NC} Image conversion failed"
+        pkill -P $CONNECTIQ_PID 2>/dev/null || true
+        kill $CONNECTIQ_PID 2>/dev/null || true
+        kill $MONKEYDO_PID 2>/dev/null || true
+        return 0
     }
 
     # Cleanup
-    kill $SIMULATOR_PID 2>/dev/null || true
-    kill $XVFB_PID 2>/dev/null || true
+    echo "Cleaning up processes..."
+    pkill monkeydo 2>/dev/null || true
+    pkill simulator 2>/dev/null || true
+    pkill connectiq 2>/dev/null || true
+    kill $MONKEYDO_PID 2>/dev/null || true
+    kill $CONNECTIQ_PID 2>/dev/null || true
+    pkill -P $CONNECTIQ_PID 2>/dev/null || true
 
     if [ -f "$SCREENSHOT_FILE" ]; then
         SIZE=$(ls -lh "$SCREENSHOT_FILE" | awk '{print $5}')

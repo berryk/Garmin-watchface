@@ -33,6 +33,7 @@ RUN apt-get update && apt-get install -y \
     # X11 and screenshot dependencies
     xvfb \
     x11-utils \
+    x11-apps \
     scrot \
     imagemagick \
     # GTK and WebKit dependencies for simulator
