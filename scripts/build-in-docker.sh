@@ -137,6 +137,12 @@ build_watchface() {
 
 # Function to take screenshot
 take_screenshot() {
+    # Allow disabling screenshots via environment variable
+    if [ "${DISABLE_SCREENSHOTS}" = "1" ] || [ "${DISABLE_SCREENSHOTS}" = "true" ]; then
+        echo "Screenshots disabled via DISABLE_SCREENSHOTS environment variable"
+        return 0
+    fi
+
     cd "$WORKSPACE"
     mkdir -p screenshots
 
@@ -163,7 +169,7 @@ take_screenshot() {
     Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
     XVFB_PID=$!
     export DISPLAY=:99
-    sleep 2
+    sleep 3
 
     # Verify X server is running
     if ! xdpyinfo -display :99 > /dev/null 2>&1; then
@@ -174,19 +180,35 @@ take_screenshot() {
 
     echo "Starting simulator..."
     chmod +x "$SIMULATOR" 2>/dev/null || true
-    "$SIMULATOR" > /dev/null 2>&1 &
+    "$SIMULATOR" > /tmp/simulator.log 2>&1 &
     SIMULATOR_PID=$!
-    sleep 5
+
+    # Wait longer for simulator to be ready
+    echo "Waiting for simulator to initialize..."
+    sleep 10
+
+    # Check if simulator is still running
+    if ! kill -0 $SIMULATOR_PID 2>/dev/null; then
+        echo -e "${YELLOW}⚠${NC} Simulator failed to start, check logs"
+        cat /tmp/simulator.log 2>/dev/null || true
+        kill $XVFB_PID 2>/dev/null || true
+        return 0
+    fi
 
     # Load the watchface
     echo "Loading watchface..."
-    java -classpath "$MONKEYBRAINS" \
+    if ! java -classpath "$MONKEYBRAINS" \
         com.garmin.monkeybrains.monkeydodeux.MonkeyDoDeux \
         -f "$PRG_FILE" \
         -d "$DEVICE" \
-        -s "$SHELL_EXE" 2>&1 || echo -e "${YELLOW}⚠${NC} MonkeyDo may have failed"
+        -s "$SHELL_EXE" 2>&1; then
+        echo -e "${YELLOW}⚠${NC} Failed to load watchface into simulator"
+        kill $SIMULATOR_PID 2>/dev/null || true
+        kill $XVFB_PID 2>/dev/null || true
+        return 0
+    fi
 
-    sleep 3
+    sleep 5
 
     # Capture screenshot
     echo "Capturing screenshot..."
