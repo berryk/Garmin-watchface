@@ -121,6 +121,43 @@ cd path\to\Garmin-watchface
 connectiq build -d fenix7 -o bin/GMTWorldTime.prg -y developer_key.pem
 ```
 
+### Using Docker
+
+Build the watchface in a Docker container for a consistent, reproducible environment.
+
+**Option 1: Without Garmin Credentials (uses GitHub release devices)**
+```bash
+docker build -t garmin-watchface .
+docker run --rm -v $(pwd):/workspace garmin-watchface /workspace/scripts/build-in-docker.sh
+```
+
+**Option 2: With Garmin Credentials (downloads devices directly from Garmin)**
+```bash
+# Copy .env.example to .env and add your credentials
+cp .env.example .env
+# Edit .env with your Garmin developer account email and password
+
+# Build with credentials (NOT stored in image)
+docker build \
+  --build-arg GARMIN_EMAIL="your@email.com" \
+  --build-arg GARMIN_PASSWORD="yourpassword" \
+  -t garmin-watchface .
+
+docker run --rm -v $(pwd):/workspace garmin-watchface /workspace/scripts/build-in-docker.sh
+```
+
+**IMPORTANT SECURITY NOTES:**
+- Build arguments are NOT stored in the final Docker image
+- Never commit `.env` file with real credentials (it's in `.gitignore`)
+- Credentials are only used during Docker build to download device definitions
+- For CI/CD, use GitHub Secrets (see `.github/workflows/build.yml`)
+
+The Docker build automatically:
+- Installs Connect IQ SDK 8.4.0
+- Downloads device definitions (via credentials OR from GitHub release)
+- Sets up all required dependencies
+- Generates developer key for signing
+
 ## Testing in Simulator
 
 ### Using VS Code

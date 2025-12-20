@@ -69,46 +69,54 @@ RUN apt-get update && apt-get install -y \
 # Note: Simulator uses libpng16 (native to Ubuntu 20.04), not libpng12
 # Verified by strace showing successful load of libpng16.so.16
 
-# Download and install official Connect IQ SDK from Garmin
-# SDK links: https://developer.garmin.com/downloads/connect-iq/sdks/sdks.json
-ENV SDK_VERSION=8.4.0
-ENV SDK_URL=https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-lin-8.4.0-2025-12-03-5122605dc.zip
-# Device definitions from GitHub release
-ENV DEVICES_URL=https://github.com/berryk/Garmin-watchface/releases/download/sdk-v8.4.0-linux/devices.tar.gz
+# Install connect-iq-sdk-manager-cli for automated SDK/device management
+RUN curl -fsSL https://raw.githubusercontent.com/lindell/connect-iq-sdk-manager-cli/master/install.sh | sh
 
-# Download and install SDK
+# Build arguments for optional Garmin credentials (NOT stored in image)
+# Pass via: docker build --build-arg GARMIN_EMAIL=your@email.com --build-arg GARMIN_PASSWORD=yourpass
+ARG GARMIN_EMAIL=""
+ARG GARMIN_PASSWORD=""
+
+# Download and install SDK and devices using connect-iq-sdk-manager
+ENV SDK_VERSION=8.4.0
+ENV DEVICES="fenix7 epix2 vivoactive4 fenix6pro venu venu2 forerunner945 forerunner255 epix enduro2"
+
 RUN set -ex && \
     mkdir -p ${GARMIN_HOME}/ConnectIQ/Sdks && \
     mkdir -p ${GARMIN_HOME}/ConnectIQ/Devices && \
-    echo "Downloading official Connect IQ SDK ${SDK_VERSION} from Garmin..." && \
-    wget -q --show-progress "${SDK_URL}" -O /tmp/sdk.zip && \
-    echo "SDK download complete, size: $(ls -lh /tmp/sdk.zip | awk '{print $5}')" && \
-    echo "Extracting SDK..." && \
-    unzip -q /tmp/sdk.zip -d /tmp/sdk-extract && \
-    echo "Finding SDK root..." && \
-    SDK_ROOT=$(find /tmp/sdk-extract -name "bin" -type d -exec dirname {} \; | head -1) && \
-    echo "SDK root found at: $SDK_ROOT" && \
-    test -n "$SDK_ROOT" || (echo "ERROR: SDK_ROOT is empty!" && exit 1) && \
-    echo "Moving SDK to ${CONNECTIQ_SDK_PATH}..." && \
-    mv "$SDK_ROOT" ${CONNECTIQ_SDK_PATH} && \
-    chmod +x ${CONNECTIQ_SDK_PATH}/bin/* 2>/dev/null || true && \
-    echo "Binaries installed: $(ls ${CONNECTIQ_SDK_PATH}/bin/ 2>/dev/null | wc -l)" && \
-    rm -rf /tmp/sdk.zip /tmp/sdk-extract
-
-# Download and install device definitions from GitHub release
-RUN set -ex && \
-    echo "Downloading device definitions from GitHub release..." && \
-    wget -q --show-progress "${DEVICES_URL}" -O /tmp/devices.tar.gz && \
-    echo "Devices download complete, size: $(ls -lh /tmp/devices.tar.gz | awk '{print $5}')" && \
-    echo "Extracting devices to ${GARMIN_HOME}/ConnectIQ/Devices/..." && \
-    tar -xzf /tmp/devices.tar.gz -C ${GARMIN_HOME}/ConnectIQ/Devices/ && \
+    if [ -n "$GARMIN_EMAIL" ] && [ -n "$GARMIN_PASSWORD" ]; then \
+        echo "Installing SDK and devices using connect-iq-sdk-manager..." && \
+        connect-iq-sdk-manager login "$GARMIN_EMAIL" "$GARMIN_PASSWORD" && \
+        connect-iq-sdk-manager sdk install && \
+        for device in $DEVICES; do \
+            echo "Installing device: $device" && \
+            connect-iq-sdk-manager device install "$device" || echo "Warning: Failed to install $device"; \
+        done; \
+    else \
+        echo "No Garmin credentials provided, using fallback SDK download..." && \
+        SDK_URL="https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-lin-8.4.0-2025-12-03-5122605dc.zip" && \
+        DEVICES_URL="https://github.com/berryk/Garmin-watchface/releases/download/sdk-v8.4.0-linux/devices.tar.gz" && \
+        echo "Downloading official Connect IQ SDK ${SDK_VERSION} from Garmin..." && \
+        wget -q --show-progress "${SDK_URL}" -O /tmp/sdk.zip && \
+        echo "SDK download complete, size: $(ls -lh /tmp/sdk.zip | awk '{print $5}')" && \
+        echo "Extracting SDK..." && \
+        unzip -q /tmp/sdk.zip -d /tmp/sdk-extract && \
+        SDK_ROOT=$(find /tmp/sdk-extract -name "bin" -type d -exec dirname {} \; | head -1) && \
+        test -n "$SDK_ROOT" || (echo "ERROR: SDK_ROOT is empty!" && exit 1) && \
+        mv "$SDK_ROOT" ${CONNECTIQ_SDK_PATH} && \
+        chmod +x ${CONNECTIQ_SDK_PATH}/bin/* 2>/dev/null || true && \
+        rm -rf /tmp/sdk.zip /tmp/sdk-extract && \
+        echo "Downloading device definitions from GitHub release..." && \
+        wget -q --show-progress "${DEVICES_URL}" -O /tmp/devices.tar.gz && \
+        tar -xzf /tmp/devices.tar.gz -C ${GARMIN_HOME}/ConnectIQ/Devices/ && \
+        rm -rf /tmp/devices.tar.gz; \
+    fi && \
     echo "=== INSTALLATION STATUS ===" && \
-    echo "SDK ${SDK_VERSION} installed from Garmin" && \
+    echo "SDK ${SDK_VERSION} installed" && \
     echo "Binaries: $(ls ${CONNECTIQ_SDK_PATH}/bin/ 2>/dev/null | wc -l)" && \
     echo "Devices installed: $(ls ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null | wc -l)" && \
     echo "Sample devices:" && \
-    ls ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null | head -10 || echo "No devices found" && \
-    rm -rf /tmp/devices.tar.gz
+    ls ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null | head -10 || echo "No devices found"
 
 # Generate developer key (for CI builds only, not for distribution)
 # This saves ~5-10 seconds per build
