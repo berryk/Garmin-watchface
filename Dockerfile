@@ -1,7 +1,8 @@
 # Dockerfile for Garmin Connect IQ Development
+# Ubuntu 18.04 for older webkit/png libraries needed by simulator
 # Includes all dependencies for building watch faces and taking screenshots
 
-FROM ubuntu:20.04
+FROM ubuntu:18.04
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -36,7 +37,7 @@ RUN apt-get update && apt-get install -y \
     x11-apps \
     scrot \
     imagemagick \
-    # GTK and WebKit dependencies for simulator
+    # GTK and WebKit dependencies for simulator (older versions for 18.04)
     libgtk-3-0 \
     libsecret-1-0 \
     libglib2.0-0 \
@@ -45,7 +46,10 @@ RUN apt-get update && apt-get install -y \
     libpango-1.0-0 \
     libjavascriptcoregtk-4.0-18 \
     gir1.2-webkit2-4.0 \
-    libwebkit2gtk-4.0-dev \
+    libwebkit2gtk-4.0-37 \
+    libwebkitgtk-3.0-0 \
+    # PNG library (older version for simulator compatibility)
+    libpng12-0 \
     # USB library for simulator
     libusb-1.0-0 \
     # Additional X11 libraries

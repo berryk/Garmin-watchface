@@ -138,6 +138,21 @@ jobs:
             echo "⚠️ Screenshot not captured for ${{ matrix.device }}"
           fi
 
+      - name: Display Screenshot in Summary
+        if: always()
+        run: |
+          if [ -f "screenshots/${{ matrix.device }}.png" ]; then
+            # Convert screenshot to base64 for embedding in summary
+            BASE64_IMG=$(base64 -w 0 screenshots/${{ matrix.device }}.png)
+            echo "## Screenshot: ${{ matrix.device }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "![Screenshot](data:image/png;base64,${BASE64_IMG})" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Screenshot: ${{ matrix.device }}" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ No screenshot available" >> $GITHUB_STEP_SUMMARY
+          fi
+
       - name: Upload PRG Artifact
         uses: actions/upload-artifact@v4
         with:
