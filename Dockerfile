@@ -87,7 +87,7 @@ RUN set -ex && \
     mv /tmp/connect-iq-sdk-manager /usr/local/bin/connect-iq-sdk-manager && \
     chmod +x /usr/local/bin/connect-iq-sdk-manager && \
     rm -rf /tmp/ciq-manager.tar.gz && \
-    connect-iq-sdk-manager --version
+    connect-iq-sdk-manager version
 
 # Build arguments for optional Garmin credentials (NOT stored in image)
 # Pass via: docker build --build-arg GARMIN_EMAIL=your@email.com --build-arg GARMIN_PASSWORD=yourpass
