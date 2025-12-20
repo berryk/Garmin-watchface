@@ -75,15 +75,29 @@ RUN mkdir -p ${CONNECTIQ_SDK_PATH} && \
 # Download and install Connect IQ SDK (154MB with 162 devices)
 # This happens once during image build instead of 15 times during parallel builds
 RUN wget -q https://github.com/berryk/Garmin-watchface/releases/download/sdk-v8.4.0-linux/connectiq-sdk-linux-bundle.tar.gz -O /tmp/sdk.tar.gz && \
-    echo "Extracting SDK to ${CONNECTIQ_SDK_PATH}..." && \
-    tar -xzf /tmp/sdk.tar.gz -C ${CONNECTIQ_SDK_PATH} && \
+    echo "Extracting SDK..." && \
+    mkdir -p /tmp/sdk-extract && \
+    tar -xzf /tmp/sdk.tar.gz -C /tmp/sdk-extract && \
+    echo "SDK tarball contents:" && \
+    ls -la /tmp/sdk-extract/ && \
+    echo "Finding SDK root directory..." && \
+    SDK_ROOT=$(find /tmp/sdk-extract -name "bin" -type d -exec dirname {} \; | head -1) && \
+    echo "SDK root found at: $SDK_ROOT" && \
+    cp -r "$SDK_ROOT"/* ${CONNECTIQ_SDK_PATH}/ && \
+    echo "Checking for Devices directory..." && \
     if [ -d "${CONNECTIQ_SDK_PATH}/Devices" ]; then \
-        echo "Moving device definitions..." && \
-        cp -r ${CONNECTIQ_SDK_PATH}/Devices/* ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null || true; \
+        echo "Moving device definitions to ${GARMIN_HOME}/ConnectIQ/Devices/..." && \
+        cp -r ${CONNECTIQ_SDK_PATH}/Devices/* ${GARMIN_HOME}/ConnectIQ/Devices/ && \
+        echo "Device images copied: $(ls -1 ${GARMIN_HOME}/ConnectIQ/Devices/ | wc -l) devices" && \
+        ls ${GARMIN_HOME}/ConnectIQ/Devices/ | head -10; \
+    else \
+        echo "WARNING: No Devices directory found in SDK!" && \
+        echo "SDK structure:" && \
+        ls -la ${CONNECTIQ_SDK_PATH}/ | head -20; \
     fi && \
     chmod +x ${CONNECTIQ_SDK_PATH}/bin/* 2>/dev/null || true && \
-    rm /tmp/sdk.tar.gz && \
-    echo "SDK installed with $(ls ${CONNECTIQ_SDK_PATH}/bin/ | wc -l) binaries and $(ls ${GARMIN_HOME}/ConnectIQ/Devices/ | wc -l) devices"
+    rm -rf /tmp/sdk.tar.gz /tmp/sdk-extract && \
+    echo "SDK installed with $(ls ${CONNECTIQ_SDK_PATH}/bin/ 2>/dev/null | wc -l) binaries and $(ls ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null | wc -l) devices"
 
 # Generate developer key (for CI builds only, not for distribution)
 # This saves ~5-10 seconds per build
