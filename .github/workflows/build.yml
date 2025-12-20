@@ -42,7 +42,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}/builder
+          images: ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder
           tags: |
             type=sha,prefix=
             type=ref,event=branch
@@ -104,7 +104,7 @@ jobs:
         run: |
           # Use short SHA (7 chars) to match metadata action format
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          IMAGE_TAG="ghcr.io/${{ github.repository }}/builder:sha-${SHORT_SHA}"
+          IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder:sha-${SHORT_SHA}"
           echo "Pulling image: $IMAGE_TAG"
           docker pull "$IMAGE_TAG"
 
@@ -115,7 +115,7 @@ jobs:
 
           # Run build inside Docker container using the shared image from GHCR
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          IMAGE_TAG="ghcr.io/${{ github.repository }}/builder:sha-${SHORT_SHA}"
+          IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder:sha-${SHORT_SHA}"
           docker run --rm \
             -v "$(pwd):/workspace" \
             -e DEVICE="${{ matrix.device }}" \
