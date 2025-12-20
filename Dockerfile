@@ -25,6 +25,10 @@ RUN apt-get update && apt-get install -y \
     openjdk-17-jdk \
     # OpenSSL for developer key generation
     openssl \
+    # Debugging and network tools
+    net-tools \
+    lsof \
+    procps \
     # X11 and screenshot dependencies
     xvfb \
     x11-utils \

@@ -180,34 +180,78 @@ take_screenshot() {
 
     echo "Starting simulator..."
     chmod +x "$SIMULATOR" 2>/dev/null || true
+
+    # Check simulator dependencies
+    echo "Checking simulator dependencies..."
+    if ! ldd "$SIMULATOR" > /tmp/ldd-check.txt 2>&1; then
+        echo -e "${YELLOW}⚠${NC} Could not check simulator dependencies"
+    else
+        if grep -q "not found" /tmp/ldd-check.txt; then
+            echo -e "${YELLOW}⚠${NC} Missing libraries for simulator:"
+            grep "not found" /tmp/ldd-check.txt
+        fi
+    fi
+
+    # Start simulator with verbose output
     "$SIMULATOR" > /tmp/simulator.log 2>&1 &
     SIMULATOR_PID=$!
+    echo "Simulator PID: $SIMULATOR_PID"
 
-    # Wait longer for simulator to be ready
+    # Wait for simulator to be ready (check if it's listening)
     echo "Waiting for simulator to initialize..."
-    sleep 10
+    RETRY_COUNT=0
+    MAX_RETRIES=20
+    while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+        # Check if simulator is still running
+        if ! kill -0 $SIMULATOR_PID 2>/dev/null; then
+            echo -e "${YELLOW}⚠${NC} Simulator crashed during startup"
+            echo "Simulator logs:"
+            cat /tmp/simulator.log 2>/dev/null || echo "No logs available"
+            kill $XVFB_PID 2>/dev/null || true
+            return 0
+        fi
 
-    # Check if simulator is still running
-    if ! kill -0 $SIMULATOR_PID 2>/dev/null; then
-        echo -e "${YELLOW}⚠${NC} Simulator failed to start, check logs"
-        cat /tmp/simulator.log 2>/dev/null || true
-        kill $XVFB_PID 2>/dev/null || true
-        return 0
+        # Check if simulator is listening on expected port (usually 1234)
+        if netstat -tln 2>/dev/null | grep -q ":1234"; then
+            echo "✓ Simulator is listening on port 1234"
+            break
+        fi
+
+        sleep 1
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        echo -n "."
+    done
+    echo ""
+
+    if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+        echo -e "${YELLOW}⚠${NC} Simulator did not start listening in time"
+        echo "Simulator logs:"
+        cat /tmp/simulator.log 2>/dev/null || echo "No logs available"
     fi
+
+    # Additional wait for simulator GUI to be ready
+    sleep 3
 
     # Load the watchface
     echo "Loading watchface..."
+    echo "Command: MonkeyDoDeux -f $PRG_FILE -d $DEVICE -s $SHELL_EXE"
+
     if ! java -classpath "$MONKEYBRAINS" \
         com.garmin.monkeybrains.monkeydodeux.MonkeyDoDeux \
         -f "$PRG_FILE" \
         -d "$DEVICE" \
-        -s "$SHELL_EXE" 2>&1; then
+        -s "$SHELL_EXE" > /tmp/monkeydo.log 2>&1; then
         echo -e "${YELLOW}⚠${NC} Failed to load watchface into simulator"
+        echo "MonkeyDo output:"
+        cat /tmp/monkeydo.log 2>/dev/null || echo "No output available"
+        echo "Simulator logs:"
+        cat /tmp/simulator.log 2>/dev/null || echo "No logs available"
         kill $SIMULATOR_PID 2>/dev/null || true
         kill $XVFB_PID 2>/dev/null || true
         return 0
     fi
 
+    echo "Watchface loaded, waiting for render..."
     sleep 5
 
     # Capture screenshot
