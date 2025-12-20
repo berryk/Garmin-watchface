@@ -68,27 +68,28 @@ RUN apt-get update && apt-get install -y \
 # Note: Simulator uses libpng16 (native to Ubuntu 20.04), not libpng12
 # Verified by strace showing successful load of libpng16.so.16
 
-# Create directory structure for SDK (standard Garmin layout)
-RUN mkdir -p ${CONNECTIQ_SDK_PATH} && \
-    mkdir -p ${GARMIN_HOME}/ConnectIQ/Devices
+# Download and install official Connect IQ SDK from Garmin
+# SDK links: https://developer.garmin.com/downloads/connect-iq/sdks/sdks.json
+ENV SDK_VERSION=7.2.1
+ENV SDK_URL=https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-lin-7.2.1-2024-04-10-15cf15509.zip
 
-# Download and install Connect IQ SDK (154MB with 162 devices)
-# This happens once during image build instead of 15 times during parallel builds
-RUN wget -q https://github.com/berryk/Garmin-watchface/releases/download/sdk-v8.4.0-linux/connectiq-sdk-linux-bundle.tar.gz -O /tmp/sdk.tar.gz && \
+# Create directory structure for SDK (standard Garmin layout)
+RUN mkdir -p ${GARMIN_HOME}/ConnectIQ/Sdks && \
+    mkdir -p ${GARMIN_HOME}/ConnectIQ/Devices && \
+    echo "Downloading official Connect IQ SDK ${SDK_VERSION} from Garmin..." && \
+    wget -q --show-progress "${SDK_URL}" -O /tmp/sdk.zip && \
     echo "Extracting SDK..." && \
-    mkdir -p /tmp/sdk-extract && \
-    tar -xzf /tmp/sdk.tar.gz -C /tmp/sdk-extract && \
-    echo "SDK tarball contents:" && \
-    ls -la /tmp/sdk-extract/ && \
-    echo "Finding SDK root directory..." && \
+    unzip -q /tmp/sdk.zip -d /tmp/sdk-extract && \
+    echo "SDK extracted, finding root directory..." && \
     SDK_ROOT=$(find /tmp/sdk-extract -name "bin" -type d -exec dirname {} \; | head -1) && \
     echo "SDK root found at: $SDK_ROOT" && \
-    cp -r "$SDK_ROOT"/* ${CONNECTIQ_SDK_PATH}/ && \
+    mv "$SDK_ROOT" ${CONNECTIQ_SDK_PATH} && \
     echo "Checking for Devices directory..." && \
     if [ -d "${CONNECTIQ_SDK_PATH}/Devices" ]; then \
         echo "Moving device definitions to ${GARMIN_HOME}/ConnectIQ/Devices/..." && \
         cp -r ${CONNECTIQ_SDK_PATH}/Devices/* ${GARMIN_HOME}/ConnectIQ/Devices/ && \
         echo "Device images copied: $(ls -1 ${GARMIN_HOME}/ConnectIQ/Devices/ | wc -l) devices" && \
+        echo "Sample devices:" && \
         ls ${GARMIN_HOME}/ConnectIQ/Devices/ | head -10; \
     else \
         echo "WARNING: No Devices directory found in SDK!" && \
@@ -96,8 +97,10 @@ RUN wget -q https://github.com/berryk/Garmin-watchface/releases/download/sdk-v8.
         ls -la ${CONNECTIQ_SDK_PATH}/ | head -20; \
     fi && \
     chmod +x ${CONNECTIQ_SDK_PATH}/bin/* 2>/dev/null || true && \
-    rm -rf /tmp/sdk.tar.gz /tmp/sdk-extract && \
-    echo "SDK installed with $(ls ${CONNECTIQ_SDK_PATH}/bin/ 2>/dev/null | wc -l) binaries and $(ls ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null | wc -l) devices"
+    rm -rf /tmp/sdk.zip /tmp/sdk-extract && \
+    echo "SDK ${SDK_VERSION} installed successfully" && \
+    echo "Binaries: $(ls ${CONNECTIQ_SDK_PATH}/bin/ 2>/dev/null | wc -l)" && \
+    echo "Devices: $(ls ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null | wc -l)"
 
 # Generate developer key (for CI builds only, not for distribution)
 # This saves ~5-10 seconds per build
