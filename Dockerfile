@@ -103,8 +103,13 @@ RUN set -ex && \
     mkdir -p ${GARMIN_HOME}/ConnectIQ/Devices && \
     if [ -n "$GARMIN_EMAIL" ] && [ -n "$GARMIN_PASSWORD" ]; then \
         echo "Installing SDK and devices using connect-iq-sdk-manager..." && \
-        connect-iq-sdk-manager login "$GARMIN_EMAIL" "$GARMIN_PASSWORD" && \
+        connect-iq-sdk-manager login --username "$GARMIN_EMAIL" --password "$GARMIN_PASSWORD" && \
         connect-iq-sdk-manager sdk install && \
+        SDK_INSTALLED=$(find ${GARMIN_HOME}/ConnectIQ/Sdks -maxdepth 1 -type d -name "*.*.*" | head -1) && \
+        if [ -n "$SDK_INSTALLED" ]; then \
+            echo "Creating symlink from $SDK_INSTALLED to ${CONNECTIQ_SDK_PATH}" && \
+            ln -sf "$SDK_INSTALLED" ${CONNECTIQ_SDK_PATH}; \
+        fi && \
         for device in $DEVICES; do \
             echo "Installing device: $device" && \
             connect-iq-sdk-manager device install "$device" || echo "Warning: Failed to install $device"; \
