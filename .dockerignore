@@ -1,0 +1,36 @@
+# Git files
+.git
+.gitignore
+.github
+
+# Build artifacts
+*.prg
+bin/
+*.png
+screenshots/
+
+# Developer keys (will be generated in container)
+developer_key.pem
+developer_key.der
+
+# SDK (will be downloaded in container or workflow)
+connectiq-sdk-*
+sdk/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation
+README.md
+LICENSE
+*.md

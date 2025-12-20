@@ -17,12 +17,61 @@ permissions:
   id-token: write
 
 jobs:
+  # Build Docker image once and push to GHCR
+  build-docker-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder
+          tags: |
+            type=sha
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=latest,enable={{is_default_branch}}
+          flavor: |
+            latest=false
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Build watch faces for all devices using the shared Docker image
   build:
-    runs-on: ubuntu-20.04
-    
+    needs: build-docker-image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
     strategy:
       matrix:
-        device: 
+        device:
           - fenix7
           - fenix5
           - venu
@@ -39,101 +88,41 @@ jobs:
           - vivoactive4
           - epix2
       fail-fast: false  # Continue building other devices if one fails
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Cache Connect IQ SDK
-        id: cache-sdk
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.Garmin/ConnectIQ
-          key: connectiq-sdk-7.3.1-${{ runner.os }}
-
-      - name: Download and Setup Connect IQ SDK
+      - name: Pull Docker image
         run: |
-          # Create directories
-          mkdir -p ~/.Garmin/ConnectIQ/Sdks/sdk
-          mkdir -p ~/.Garmin/ConnectIQ/Devices
-          
-          # Download SDK bundle from our GitHub release (tar.gz for Linux compatibility)
-          SDK_URL="https://github.com/berryk/Garmin-watchface/releases/download/sdk-v8.4.0-linux/connectiq-sdk-linux-bundle.tar.gz"
-          
-          echo "Downloading Connect IQ SDK bundle (154MB with 162 devices)..."
-          wget -q "$SDK_URL" -O /tmp/sdk.tar.gz
-          
-          echo "Extracting SDK..."
-          tar -xzf /tmp/sdk.tar.gz -C ~/.Garmin/ConnectIQ/Sdks/sdk
-          rm /tmp/sdk.tar.gz
-          
-          # Move device files to correct location
-          if [ -d ~/.Garmin/ConnectIQ/Sdks/sdk/Devices ]; then
-            mv ~/.Garmin/ConnectIQ/Sdks/sdk/Devices/* ~/.Garmin/ConnectIQ/Devices/ 2>/dev/null || true
-          fi
-          
-          # Set SDK path
-          echo "CONNECTIQ_SDK=$HOME/.Garmin/ConnectIQ/Sdks/sdk" >> $GITHUB_ENV
-          
-          # Make scripts executable
-          chmod +x ~/.Garmin/ConnectIQ/Sdks/sdk/bin/* 2>/dev/null || true
-          
-          echo "SDK installed to: $HOME/.Garmin/ConnectIQ/Sdks/sdk"
-          ls -la ~/.Garmin/ConnectIQ/Sdks/sdk/bin/ | head -20
-          echo "Device count: $(ls ~/.Garmin/ConnectIQ/Devices/ | wc -l)"
+          # Use short SHA (7 chars) to match metadata action format
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder:sha-${SHORT_SHA}"
+          echo "Pulling image: $IMAGE_TAG"
+          docker pull "$IMAGE_TAG"
 
-      - name: Generate Developer Key
+      - name: Build and Screenshot for ${{ matrix.device }}
         run: |
-          # Generate a developer key for building (CI-only, not for distribution)
-          openssl genrsa -out developer_key.pem 4096
-          # Convert to DER format
-          openssl pkcs8 -topk8 -inform PEM -outform DER -in developer_key.pem -out developer_key.der -nocrypt
-          echo "Developer key generated"
+          # Create output directories
+          mkdir -p bin screenshots
 
-      - name: Build for ${{ matrix.device }}
-        run: |
-          mkdir -p bin
-          
-          # Use the SDK we downloaded
-          SDK_PATH="$HOME/.Garmin/ConnectIQ/Sdks/sdk"
-          
-          echo "Building for device: ${{ matrix.device }}"
-          echo "SDK Path: $SDK_PATH"
-          
-          # Find monkeybrains.jar
-          MONKEYBRAINS=$(find $SDK_PATH -name "monkeybrains.jar" | head -1)
-          
-          if [ -z "$MONKEYBRAINS" ]; then
-            echo "ERROR: monkeybrains.jar not found in SDK"
-            ls -la $SDK_PATH/
-            exit 1
-          fi
-          
-          echo "Using monkeybrains.jar: $MONKEYBRAINS"
-          
-          # Build the watchface
-          java -jar "$MONKEYBRAINS" \
-            -o "bin/GMTWorldTime-${{ matrix.device }}.prg" \
-            -f monkey.jungle \
-            -d ${{ matrix.device }} \
-            -y developer_key.der \
-            -w 2>&1 || {
-              echo "Build failed, showing detailed error..."
-              java -jar "$MONKEYBRAINS" \
-                -o "bin/GMTWorldTime-${{ matrix.device }}.prg" \
-                -f monkey.jungle \
-                -d ${{ matrix.device }} \
-                -y developer_key.der
-            }
-          
-          # Check if build succeeded
+          # Run build inside Docker container using the shared image from GHCR
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder:sha-${SHORT_SHA}"
+          docker run --rm \
+            -v "$(pwd):/workspace" \
+            -e DEVICE="${{ matrix.device }}" \
+            "$IMAGE_TAG" \
+            /workspace/scripts/build-in-docker.sh
+
+          # Verify build output
           if [ -f "bin/GMTWorldTime-${{ matrix.device }}.prg" ]; then
             echo "✅ Build successful for ${{ matrix.device }}"
             ls -la bin/
@@ -142,87 +131,26 @@ jobs:
             exit 1
           fi
 
-      - name: Install Screenshot Dependencies
-        run: |
-          sudo apt-get update
-          # Install all required libraries for the simulator
-          sudo apt-get install -y \
-            xvfb \
-            x11-utils \
-            scrot \
-            imagemagick \
-            libgtk-3-0 \
-            libsecret-1-0 \
-            libglib2.0-0 \
-            libgdk-pixbuf2.0-0 \
-            libcairo2 \
-            libpango-1.0-0 \
-            libjavascriptcoregtk-4.0-18 \
-            gir1.2-webkit2-4.0 || true
-          
-          # Try to install webkit2gtk - the simulator needs this but it may not be available
-          sudo apt-get install -y libwebkit2gtk-4.1-0 2>/dev/null || \
-          sudo apt-get install -y libwebkit2gtk-4.0-dev 2>/dev/null || \
-          echo "⚠️ Warning: webkit2gtk not available, screenshots will be skipped"
-
-      - name: Take Simulator Screenshot
-        continue-on-error: true  # Don't fail build if simulator can't run (webkit unavailable)
-        run: |
-          mkdir -p screenshots
-          
-          SDK_PATH="$HOME/.Garmin/ConnectIQ/Sdks/sdk"
-          SIMULATOR="$SDK_PATH/bin/simulator"
-          MONKEYBRAINS=$(find $SDK_PATH -name "monkeybrains.jar" | head -1)
-          SHELL_EXE="$SDK_PATH/bin/shell"
-          
-          # Check if simulator exists
-          if [ ! -f "$SIMULATOR" ]; then
-            echo "Simulator not found, skipping screenshot"
-            echo "Available files in bin:"
-            ls -la $SDK_PATH/bin/
-            exit 0
-          fi
-          
-          # Start virtual display
-          echo "Starting Xvfb..."
-          Xvfb :99 -screen 0 1024x768x24 &
-          XVFB_PID=$!
-          export DISPLAY=:99
-          sleep 2
-          
-          # Start simulator
-          echo "Starting simulator..."
-          chmod +x "$SIMULATOR" 2>/dev/null || true
-          "$SIMULATOR" &
-          SIMULATOR_PID=$!
-          sleep 5
-          
-          # Load the watchface
-          echo "Loading watchface..."
-          java -classpath "$MONKEYBRAINS" \
-            com.garmin.monkeybrains.monkeydodeux.MonkeyDoDeux \
-            -f "bin/GMTWorldTime-${{ matrix.device }}.prg" \
-            -d ${{ matrix.device }} \
-            -s "$SHELL_EXE" 2>&1 || echo "MonkeyDo may have failed"
-          
-          sleep 3
-          
-          # Capture screenshot
-          echo "Capturing screenshot..."
-          scrot "screenshots/${{ matrix.device }}.png" 2>/dev/null || {
-            # Try alternative screenshot method
-            import -window root "screenshots/${{ matrix.device }}.png" 2>/dev/null || echo "Screenshot capture failed"
-          }
-          
-          # Cleanup
-          kill $SIMULATOR_PID 2>/dev/null || true
-          kill $XVFB_PID 2>/dev/null || true
-          
+          # Check screenshot
           if [ -f "screenshots/${{ matrix.device }}.png" ]; then
             echo "✅ Screenshot captured for ${{ matrix.device }}"
-            ls -la screenshots/
           else
             echo "⚠️ Screenshot not captured for ${{ matrix.device }}"
+          fi
+
+      - name: Display Screenshot in Summary
+        if: always()
+        run: |
+          if [ -f "screenshots/${{ matrix.device }}.png" ]; then
+            # Convert screenshot to base64 for embedding in summary
+            BASE64_IMG=$(base64 -w 0 screenshots/${{ matrix.device }}.png)
+            echo "## Screenshot: ${{ matrix.device }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "![Screenshot](data:image/png;base64,${BASE64_IMG})" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Screenshot: ${{ matrix.device }}" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ No screenshot available" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Upload PRG Artifact
