@@ -97,8 +97,12 @@ RUN set -ex && \
 
 # Download and install devices from GitHub release
 RUN echo "Downloading known-working Devices from GitHub release..." && \
-    wget -q --show-progress "${DEVICES_URL}" -O /tmp/devices.zip && \
-    echo "Devices download complete, size: $(ls -lh /tmp/devices.zip | awk '{print $5}')"
+    wget --show-progress "${DEVICES_URL}" -O /tmp/devices.zip && \
+    echo "Devices download complete, size: $(ls -lh /tmp/devices.zip | awk '{print $5}')" && \
+    echo "Verifying download..." && \
+    test -f /tmp/devices.zip || (echo "ERROR: Download failed!" && exit 1) && \
+    file /tmp/devices.zip && \
+    unzip -t /tmp/devices.zip
 
 # Extract and install devices
 RUN echo "Extracting devices to ${GARMIN_HOME}/ConnectIQ/Devices/..." && \
