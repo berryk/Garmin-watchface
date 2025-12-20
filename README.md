@@ -150,7 +150,7 @@ docker run --rm -v $(pwd):/workspace garmin-watchface /workspace/scripts/build-i
 - Build arguments are NOT stored in the final Docker image
 - Never commit `.env` file with real credentials (it's in `.gitignore`)
 - Credentials are only used during Docker build to download device definitions
-- For CI/CD, use GitHub Secrets (see `.github/workflows/build.yml`)
+- For CI/CD, use GitHub Secrets - **[See Setup Guide](docs/GITHUB_SECRETS_SETUP.md)**
 
 The Docker build automatically:
 - Installs Connect IQ SDK 8.4.0
