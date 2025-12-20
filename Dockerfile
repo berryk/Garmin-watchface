@@ -95,22 +95,28 @@ RUN set -ex && \
     echo "Binaries installed: $(ls ${CONNECTIQ_SDK_PATH}/bin/ 2>/dev/null | wc -l)" && \
     rm -rf /tmp/sdk.zip /tmp/sdk-extract
 
-RUN set -ex && \
-    echo "Downloading known-working Devices from GitHub release..." && \
+# Download and install devices from GitHub release
+RUN echo "Downloading known-working Devices from GitHub release..." && \
     wget -q --show-progress "${DEVICES_URL}" -O /tmp/devices.zip && \
-    echo "Devices download complete, size: $(ls -lh /tmp/devices.zip | awk '{print $5}')" && \
-    echo "Extracting devices to ${GARMIN_HOME}/ConnectIQ/Devices/..." && \
+    echo "Devices download complete, size: $(ls -lh /tmp/devices.zip | awk '{print $5}')"
+
+# Extract and install devices
+RUN echo "Extracting devices to ${GARMIN_HOME}/ConnectIQ/Devices/..." && \
     unzip -q /tmp/devices.zip -d /tmp/devices-extract && \
     echo "Checking device structure..." && \
-    ls -la /tmp/devices-extract/ && \
-    if [ -d "/tmp/devices-extract/Devices" ]; then \
+    ls -la /tmp/devices-extract/
+
+# Copy devices to correct location
+RUN if [ -d "/tmp/devices-extract/Devices" ]; then \
         echo "Found Devices root folder, copying contents..." && \
         cp -r /tmp/devices-extract/Devices/* ${GARMIN_HOME}/ConnectIQ/Devices/; \
     else \
         echo "No Devices root folder, copying all contents..." && \
         cp -r /tmp/devices-extract/* ${GARMIN_HOME}/ConnectIQ/Devices/; \
-    fi && \
-    rm -rf /tmp/devices.zip /tmp/devices-extract && \
+    fi
+
+# Cleanup and verify installation
+RUN rm -rf /tmp/devices.zip /tmp/devices-extract && \
     echo "=== FINAL STATUS ===" && \
     echo "SDK ${SDK_VERSION} installed from Garmin" && \
     echo "Binaries: $(ls ${CONNECTIQ_SDK_PATH}/bin/ 2>/dev/null | wc -l)" && \
