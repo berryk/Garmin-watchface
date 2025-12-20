@@ -98,22 +98,34 @@ ARG GARMIN_PASSWORD=""
 ENV SDK_VERSION=8.4.0
 ENV DEVICES="fenix7 epix2 vivoactive4 fenix6pro venu venu2 forerunner945 forerunner255 epix enduro2"
 
+# Copy manifest.xml for device detection
+COPY manifest.xml /tmp/manifest.xml
+
 RUN set -ex && \
     mkdir -p ${GARMIN_HOME}/ConnectIQ/Sdks && \
     mkdir -p ${GARMIN_HOME}/ConnectIQ/Devices && \
     if [ -n "$GARMIN_EMAIL" ] && [ -n "$GARMIN_PASSWORD" ]; then \
         echo "Installing SDK and devices using connect-iq-sdk-manager..." && \
-        connect-iq-sdk-manager login --username "$GARMIN_EMAIL" --password "$GARMIN_PASSWORD" && \
-        connect-iq-sdk-manager sdk install && \
-        SDK_INSTALLED=$(find ${GARMIN_HOME}/ConnectIQ/Sdks -maxdepth 1 -type d -name "*.*.*" | head -1) && \
+        export GARMIN_USERNAME="$GARMIN_EMAIL" && \
+        export GARMIN_PASSWORD="$GARMIN_PASSWORD" && \
+        echo "Accepting license agreement..." && \
+        connect-iq-sdk-manager agreement accept && \
+        echo "Logging in to Garmin..." && \
+        connect-iq-sdk-manager login && \
+        echo "Installing SDK ${SDK_VERSION}..." && \
+        connect-iq-sdk-manager sdk set ${SDK_VERSION} && \
+        SDK_INSTALLED=$(connect-iq-sdk-manager sdk current-path) && \
         if [ -n "$SDK_INSTALLED" ]; then \
             echo "Creating symlink from $SDK_INSTALLED to ${CONNECTIQ_SDK_PATH}" && \
             ln -sf "$SDK_INSTALLED" ${CONNECTIQ_SDK_PATH}; \
         fi && \
+        echo "Downloading devices from manifest..." && \
+        connect-iq-sdk-manager device download --manifest=/tmp/manifest.xml || \
+        (echo "Manifest download failed, installing individual devices..." && \
         for device in $DEVICES; do \
             echo "Installing device: $device" && \
             connect-iq-sdk-manager device install "$device" || echo "Warning: Failed to install $device"; \
-        done; \
+        done); \
     else \
         echo "No Garmin credentials provided, using fallback SDK download..." && \
         SDK_URL="https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-lin-8.4.0-2025-12-03-5122605dc.zip" && \
