@@ -1,8 +1,8 @@
 # Dockerfile for Garmin Connect IQ Development
-# Ubuntu 18.04 for older webkit/png libraries needed by simulator
+# Ubuntu 20.04 with manually installed libpng12 for simulator compatibility
 # Includes all dependencies for building watch faces and taking screenshots
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -11,7 +11,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Use standard Garmin SDK directory structure
 ENV GARMIN_HOME=/root/.Garmin
 ENV CONNECTIQ_SDK_PATH=/root/.Garmin/ConnectIQ/Sdks/sdk
-ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV PATH="${CONNECTIQ_SDK_PATH}/bin:${JAVA_HOME}/bin:${PATH}"
 
 # Install base dependencies
@@ -23,8 +23,8 @@ RUN apt-get update && apt-get install -y \
     git \
     unzip \
     coreutils \
-    # Java 11 (latest available in Ubuntu 18.04)
-    openjdk-11-jdk \
+    # Java 17 for Connect IQ SDK
+    openjdk-17-jdk \
     # OpenSSL for developer key generation
     openssl \
     # Debugging and network tools
@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y \
     x11-apps \
     scrot \
     imagemagick \
-    # GTK and WebKit dependencies for simulator (older versions for 18.04)
+    # GTK and WebKit dependencies for simulator
     libgtk-3-0 \
     libsecret-1-0 \
     libglib2.0-0 \
@@ -47,7 +47,6 @@ RUN apt-get update && apt-get install -y \
     libjavascriptcoregtk-4.0-18 \
     gir1.2-webkit2-4.0 \
     libwebkit2gtk-4.0-37 \
-    libwebkitgtk-3.0-0 \
     # USB library for simulator
     libusb-1.0-0 \
     # Additional X11 libraries
@@ -60,6 +59,13 @@ RUN apt-get update && apt-get install -y \
     libxss1 \
     # Clean up
     && rm -rf /var/lib/apt/lists/*
+
+# Manually install libpng12 (not available in Ubuntu 20.04 repos)
+# Download from Ubuntu 16.04 xenial archive - libpng12 is compatible across versions
+RUN wget -q http://archive.ubuntu.com/ubuntu/pool/main/libp/libpng/libpng12-0_1.2.54-1ubuntu1_amd64.deb -O /tmp/libpng12.deb && \
+    dpkg -i /tmp/libpng12.deb && \
+    rm /tmp/libpng12.deb && \
+    echo "libpng12-0 installed from Ubuntu xenial archive"
 
 # Create directory structure for SDK (standard Garmin layout)
 RUN mkdir -p ${CONNECTIQ_SDK_PATH} && \
