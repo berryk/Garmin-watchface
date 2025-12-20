@@ -59,6 +59,19 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir -p ${CONNECTIQ_SDK_PATH} && \
     mkdir -p ${GARMIN_HOME}/ConnectIQ/Devices
 
+# Download and install Connect IQ SDK (154MB with 162 devices)
+# This happens once during image build instead of 15 times during parallel builds
+RUN wget -q https://github.com/berryk/Garmin-watchface/releases/download/sdk-v8.4.0-linux/connectiq-sdk-linux-bundle.tar.gz -O /tmp/sdk.tar.gz && \
+    echo "Extracting SDK to ${CONNECTIQ_SDK_PATH}..." && \
+    tar -xzf /tmp/sdk.tar.gz -C ${CONNECTIQ_SDK_PATH} && \
+    if [ -d "${CONNECTIQ_SDK_PATH}/Devices" ]; then \
+        echo "Moving device definitions..." && \
+        cp -r ${CONNECTIQ_SDK_PATH}/Devices/* ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null || true; \
+    fi && \
+    chmod +x ${CONNECTIQ_SDK_PATH}/bin/* 2>/dev/null || true && \
+    rm /tmp/sdk.tar.gz && \
+    echo "SDK installed with $(ls ${CONNECTIQ_SDK_PATH}/bin/ | wc -l) binaries and $(ls ${GARMIN_HOME}/ConnectIQ/Devices/ | wc -l) devices"
+
 # Set working directory
 WORKDIR /workspace
 
