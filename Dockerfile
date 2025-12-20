@@ -11,7 +11,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Use standard Garmin SDK directory structure
 ENV GARMIN_HOME=/root/.Garmin
 ENV CONNECTIQ_SDK_PATH=/root/.Garmin/ConnectIQ/Sdks/sdk
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
 ENV PATH="${CONNECTIQ_SDK_PATH}/bin:${JAVA_HOME}/bin:${PATH}"
 
 # Install base dependencies
@@ -23,8 +23,8 @@ RUN apt-get update && apt-get install -y \
     git \
     unzip \
     coreutils \
-    # Java 17 (required for monkeybrains.jar)
-    openjdk-17-jdk \
+    # Java 11 (latest available in Ubuntu 18.04)
+    openjdk-11-jdk \
     # OpenSSL for developer key generation
     openssl \
     # Debugging and network tools
@@ -48,8 +48,6 @@ RUN apt-get update && apt-get install -y \
     gir1.2-webkit2-4.0 \
     libwebkit2gtk-4.0-37 \
     libwebkitgtk-3.0-0 \
-    # PNG library (older version for simulator compatibility)
-    libpng12-0 \
     # USB library for simulator
     libusb-1.0-0 \
     # Additional X11 libraries
