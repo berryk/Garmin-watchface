@@ -81,27 +81,41 @@ RUN mkdir -p ${GARMIN_HOME}/ConnectIQ/Sdks && \
     wget -q --show-progress "${SDK_URL}" -O /tmp/sdk.zip && \
     echo "Extracting SDK..." && \
     unzip -q /tmp/sdk.zip -d /tmp/sdk-extract && \
-    echo "SDK extracted, finding root directory..." && \
+    echo "=== SDK EXTRACTION DEBUG ===" && \
+    echo "Contents of /tmp/sdk-extract:" && \
+    ls -la /tmp/sdk-extract/ && \
+    echo "Looking for 'bin' directory..." && \
+    find /tmp/sdk-extract -name "bin" -type d && \
+    echo "Looking for 'Devices' directory..." && \
+    find /tmp/sdk-extract -name "Devices" -type d && \
+    echo "=== FINDING SDK ROOT ===" && \
     SDK_ROOT=$(find /tmp/sdk-extract -name "bin" -type d -exec dirname {} \; | head -1) && \
     echo "SDK root found at: $SDK_ROOT" && \
+    echo "Contents of SDK root:" && \
+    ls -la "$SDK_ROOT" && \
+    echo "Moving SDK to ${CONNECTIQ_SDK_PATH}..." && \
     mv "$SDK_ROOT" ${CONNECTIQ_SDK_PATH} && \
-    echo "Checking for Devices directory..." && \
+    echo "=== CHECKING FOR DEVICES ===" && \
+    echo "Looking for Devices in SDK path:" && \
+    find ${CONNECTIQ_SDK_PATH} -name "Devices" -type d && \
     if [ -d "${CONNECTIQ_SDK_PATH}/Devices" ]; then \
-        echo "Moving device definitions to ${GARMIN_HOME}/ConnectIQ/Devices/..." && \
+        echo "Found Devices at ${CONNECTIQ_SDK_PATH}/Devices" && \
+        echo "Copying to ${GARMIN_HOME}/ConnectIQ/Devices/..." && \
         cp -r ${CONNECTIQ_SDK_PATH}/Devices/* ${GARMIN_HOME}/ConnectIQ/Devices/ && \
         echo "Device images copied: $(ls -1 ${GARMIN_HOME}/ConnectIQ/Devices/ | wc -l) devices" && \
         echo "Sample devices:" && \
         ls ${GARMIN_HOME}/ConnectIQ/Devices/ | head -10; \
     else \
-        echo "WARNING: No Devices directory found in SDK!" && \
-        echo "SDK structure:" && \
-        ls -la ${CONNECTIQ_SDK_PATH}/ | head -20; \
+        echo "WARNING: No Devices directory found at ${CONNECTIQ_SDK_PATH}/Devices" && \
+        echo "Full SDK structure:" && \
+        ls -laR ${CONNECTIQ_SDK_PATH}/ | head -50; \
     fi && \
     chmod +x ${CONNECTIQ_SDK_PATH}/bin/* 2>/dev/null || true && \
     rm -rf /tmp/sdk.zip /tmp/sdk-extract && \
-    echo "SDK ${SDK_VERSION} installed successfully" && \
+    echo "=== FINAL STATUS ===" && \
+    echo "SDK ${SDK_VERSION} installed" && \
     echo "Binaries: $(ls ${CONNECTIQ_SDK_PATH}/bin/ 2>/dev/null | wc -l)" && \
-    echo "Devices: $(ls ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null | wc -l)"
+    echo "Devices in ${GARMIN_HOME}/ConnectIQ/Devices: $(ls ${GARMIN_HOME}/ConnectIQ/Devices/ 2>/dev/null | wc -l)"
 
 # Generate developer key (for CI builds only, not for distribution)
 # This saves ~5-10 seconds per build
