@@ -60,12 +60,15 @@ RUN apt-get update && apt-get install -y \
     # Clean up
     && rm -rf /var/lib/apt/lists/*
 
-# Manually install libpng12 (not available in Ubuntu 20.04 repos)
-# Download from Ubuntu 16.04 xenial archive - libpng12 is compatible across versions
+# Manually install old libraries required by Garmin simulator (not in Ubuntu 20.04 repos)
+# These specific versions are critical for the simulator to work correctly
 RUN wget -q http://archive.ubuntu.com/ubuntu/pool/main/libp/libpng/libpng12-0_1.2.54-1ubuntu1_amd64.deb -O /tmp/libpng12.deb && \
-    dpkg -i /tmp/libpng12.deb && \
-    rm /tmp/libpng12.deb && \
-    echo "libpng12-0 installed from Ubuntu xenial archive"
+    wget -q http://archive.ubuntu.com/ubuntu/pool/main/libj/libjpeg8/libjpeg8_8c-2ubuntu8_amd64.deb -O /tmp/libjpeg8.deb && \
+    wget -q http://archive.ubuntu.com/ubuntu/pool/universe/w/webkitgtk/libwebkitgtk-1.0-0_2.4.11-3ubuntu3_amd64.deb -O /tmp/libwebkitgtk.deb && \
+    dpkg -i /tmp/libpng12.deb /tmp/libjpeg8.deb /tmp/libwebkitgtk.deb || true && \
+    apt-get install -f -y && \
+    rm /tmp/*.deb && \
+    echo "Old libraries installed: libpng12-0, libjpeg8, libwebkitgtk-1.0-0"
 
 # Create directory structure for SDK (standard Garmin layout)
 RUN mkdir -p ${CONNECTIQ_SDK_PATH} && \
