@@ -40,8 +40,10 @@ RUN apt-get update && apt-get install -y \
     x11-apps \
     scrot \
     imagemagick \
-    # Critical: Old WebKit for simulator UI (available in 18.04 apt repos!)
+    # Critical: Old WebKit 1.0 AND Modern WebKit 4.0 (simulator needs BOTH!)
     libwebkitgtk-1.0-0 \
+    libwebkit2gtk-4.0-37 \
+    libjavascriptcoregtk-4.0-18 \
     # USB library for simulator
     libusb-1.0-0 \
     # JPEG library (turbo variant in 18.04)
