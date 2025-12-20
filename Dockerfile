@@ -70,7 +70,21 @@ RUN apt-get update && apt-get install -y \
 # Verified by strace showing successful load of libpng16.so.16
 
 # Install connect-iq-sdk-manager-cli for automated SDK/device management
-RUN curl -fsSL https://raw.githubusercontent.com/lindell/connect-iq-sdk-manager-cli/master/install.sh | sh
+RUN set -ex && \
+    ARCH="$(uname -m)" && \
+    case "$ARCH" in \
+        x86_64) ARCH="x86_64" ;; \
+        aarch64) ARCH="arm64" ;; \
+        *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+    esac && \
+    LATEST_VERSION=$(curl -s https://api.github.com/repos/lindell/connect-iq-sdk-manager-cli/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') && \
+    echo "Installing connect-iq-sdk-manager-cli ${LATEST_VERSION} for ${ARCH}..." && \
+    curl -fsSL "https://github.com/lindell/connect-iq-sdk-manager-cli/releases/download/${LATEST_VERSION}/connect-iq-sdk-manager-cli_Linux_${ARCH}.tar.gz" -o /tmp/ciq-manager.tar.gz && \
+    tar -xzf /tmp/ciq-manager.tar.gz -C /tmp && \
+    mv /tmp/connect-iq-sdk-manager /usr/local/bin/connect-iq-sdk-manager && \
+    chmod +x /usr/local/bin/connect-iq-sdk-manager && \
+    rm -rf /tmp/ciq-manager.tar.gz /tmp/connect-iq-sdk-manager && \
+    connect-iq-sdk-manager --version
 
 # Build arguments for optional Garmin credentials (NOT stored in image)
 # Pass via: docker build --build-arg GARMIN_EMAIL=your@email.com --build-arg GARMIN_PASSWORD=yourpass
