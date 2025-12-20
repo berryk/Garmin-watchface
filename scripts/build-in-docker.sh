@@ -221,14 +221,12 @@ take_screenshot() {
 
     # Start Connect IQ using xvfb-run in BACKGROUND (your proven approach)
     echo "Starting Connect IQ simulator with xvfb-run (background)..."
-    echo "Running with strace to capture library loading attempts..."
 
-    # Run with strace to see what libraries it's trying to load
-    strace -f -e trace=open,openat,execve -o /tmp/strace.log \
-        xvfb-run -n $DISPLAY_NUM -f "$XAUTH_FILE" "$CONNECTIQ" > /tmp/connectiq.log 2>&1 &
+    # Run without strace - it can interfere with GUI rendering
+    xvfb-run -n $DISPLAY_NUM -f "$XAUTH_FILE" "$CONNECTIQ" > /tmp/connectiq.log 2>&1 &
     CONNECTIQ_PID=$!
     echo "Connect IQ started with PID: $CONNECTIQ_PID"
-    sleep 3
+    sleep 5  # Give it more time to initialize
 
     # Check if connectiq is still running
     if ! kill -0 $CONNECTIQ_PID 2>/dev/null; then
@@ -236,13 +234,6 @@ take_screenshot() {
         echo ""
         echo "=== Connect IQ stdout/stderr ==="
         cat /tmp/connectiq.log 2>/dev/null || echo "No logs"
-        echo ""
-        echo "=== Library loading attempts (strace) ==="
-        echo "Failed library loads:"
-        grep -E '(ENOENT|libpng|libwebkit|libjpeg|GLIBC|libstdc)' /tmp/strace.log 2>/dev/null | tail -20 || echo "No strace output"
-        echo ""
-        echo "=== Last 30 system calls before failure ==="
-        tail -30 /tmp/strace.log 2>/dev/null || echo "No strace output"
         return 0
     fi
 
@@ -253,8 +244,8 @@ take_screenshot() {
     echo "MonkeyDo started with PID: $MONKEYDO_PID"
 
     # Wait for watchface to load and render
-    echo "Waiting for watchface to load and render (10 seconds)..."
-    sleep 10
+    echo "Waiting for watchface to load and render (15 seconds)..."
+    sleep 15
 
     # Try multiple screenshot methods
     echo "Capturing screenshot..."
