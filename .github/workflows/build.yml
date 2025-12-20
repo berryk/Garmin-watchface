@@ -44,9 +44,12 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}/builder
           tags: |
-            type=sha,prefix={{branch}}-
+            type=sha,prefix=
             type=ref,event=branch
+            type=ref,event=pr
             type=raw,value=latest,enable={{is_default_branch}}
+          flavor: |
+            latest=false
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -99,7 +102,11 @@ jobs:
 
       - name: Pull Docker image
         run: |
-          docker pull ghcr.io/${{ github.repository }}/builder:${{ github.ref_name }}
+          # Use short SHA (7 chars) to match metadata action format
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          IMAGE_TAG="ghcr.io/${{ github.repository }}/builder:sha-${SHORT_SHA}"
+          echo "Pulling image: $IMAGE_TAG"
+          docker pull "$IMAGE_TAG"
 
       - name: Build and Screenshot for ${{ matrix.device }}
         run: |
@@ -107,10 +114,12 @@ jobs:
           mkdir -p bin screenshots
 
           # Run build inside Docker container using the shared image from GHCR
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          IMAGE_TAG="ghcr.io/${{ github.repository }}/builder:sha-${SHORT_SHA}"
           docker run --rm \
             -v "$(pwd):/workspace" \
             -e DEVICE="${{ matrix.device }}" \
-            ghcr.io/${{ github.repository }}/builder:${{ github.ref_name }} \
+            "$IMAGE_TAG" \
             /workspace/scripts/build-in-docker.sh
 
           # Verify build output
