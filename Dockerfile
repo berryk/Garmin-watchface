@@ -32,6 +32,8 @@ RUN apt-get update && apt-get install -y \
     net-tools \
     lsof \
     procps \
+    strace \
+    file \
     # X11 and screenshot dependencies
     xvfb \
     x11-utils \

@@ -194,9 +194,38 @@ take_screenshot() {
         return 0
     fi
 
+    # Debug: Analyze simulator binary and library dependencies
+    echo "========================================"
+    echo "Simulator Binary Analysis"
+    echo "========================================"
+    echo "Binary type:"
+    file "$CONNECTIQ"
+    echo ""
+    echo "Library dependencies (ldd):"
+    ldd "$CONNECTIQ" 2>&1 | head -30
+    echo ""
+    echo "Checking critical libraries:"
+    echo -n "  libpng12.so.0: "
+    ldconfig -p | grep libpng12 || echo "NOT FOUND"
+    echo -n "  libwebkitgtk-1.0.so.0: "
+    ldconfig -p | grep libwebkitgtk-1.0 || echo "NOT FOUND"
+    echo -n "  libjpeg.so.8: "
+    ldconfig -p | grep libjpeg.so.8 || echo "NOT FOUND"
+    echo -n "  libstdc++.so.6: "
+    ldconfig -p | grep libstdc++ | head -1 || echo "NOT FOUND"
+    echo ""
+    echo "GLIBC version:"
+    ldd --version | head -1
+    echo "========================================"
+    echo ""
+
     # Start Connect IQ using xvfb-run in BACKGROUND (your proven approach)
     echo "Starting Connect IQ simulator with xvfb-run (background)..."
-    xvfb-run -n $DISPLAY_NUM -f "$XAUTH_FILE" "$CONNECTIQ" > /tmp/connectiq.log 2>&1 &
+    echo "Running with strace to capture library loading attempts..."
+
+    # Run with strace to see what libraries it's trying to load
+    strace -f -e trace=open,openat,execve -o /tmp/strace.log \
+        xvfb-run -n $DISPLAY_NUM -f "$XAUTH_FILE" "$CONNECTIQ" > /tmp/connectiq.log 2>&1 &
     CONNECTIQ_PID=$!
     echo "Connect IQ started with PID: $CONNECTIQ_PID"
     sleep 3
@@ -204,8 +233,16 @@ take_screenshot() {
     # Check if connectiq is still running
     if ! kill -0 $CONNECTIQ_PID 2>/dev/null; then
         echo -e "${YELLOW}⚠${NC} Connect IQ failed to start"
-        echo "Connect IQ logs:"
+        echo ""
+        echo "=== Connect IQ stdout/stderr ==="
         cat /tmp/connectiq.log 2>/dev/null || echo "No logs"
+        echo ""
+        echo "=== Library loading attempts (strace) ==="
+        echo "Failed library loads:"
+        grep -E '(ENOENT|libpng|libwebkit|libjpeg|GLIBC|libstdc)' /tmp/strace.log 2>/dev/null | tail -20 || echo "No strace output"
+        echo ""
+        echo "=== Last 30 system calls before failure ==="
+        tail -30 /tmp/strace.log 2>/dev/null || echo "No strace output"
         return 0
     fi
 
