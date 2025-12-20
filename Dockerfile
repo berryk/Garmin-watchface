@@ -1,5 +1,6 @@
 # Dockerfile for Garmin Connect IQ Development
 # Ubuntu 20.04 - Required for GLIBC 2.28+ needed by SDK 8.4.0 simulator
+# Downloads official SDK 8.4.0 from developer.garmin.com
 # Simulator needs: libwebkit2gtk-4.0-37, libjpeg8, modern GLIBC
 
 FROM ubuntu:20.04
@@ -70,8 +71,8 @@ RUN apt-get update && apt-get install -y \
 
 # Download and install official Connect IQ SDK from Garmin
 # SDK links: https://developer.garmin.com/downloads/connect-iq/sdks/sdks.json
-ENV SDK_VERSION=7.2.1
-ENV SDK_URL=https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-lin-7.2.1-2024-04-10-15cf15509.zip
+ENV SDK_VERSION=8.4.0
+ENV SDK_URL=https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-lin-8.4.0-2025-12-03-5122605dc.zip
 
 # Create directory structure for SDK (standard Garmin layout)
 RUN mkdir -p ${GARMIN_HOME}/ConnectIQ/Sdks && \
