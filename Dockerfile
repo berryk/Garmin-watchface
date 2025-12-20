@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y \
     tar \
     git \
     unzip \
+    coreutils \
     # Java 17 (required for monkeybrains.jar)
     openjdk-17-jdk \
     # OpenSSL for developer key generation
