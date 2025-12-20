@@ -206,37 +206,15 @@ take_screenshot() {
         fi
     fi
 
-    # Start simulator in background
-    "$SIMULATOR" > /tmp/simulator.log 2>&1 &
+    # Start simulator in background with the PRG file loaded
+    echo "Starting simulator with watchface..."
+    "$SIMULATOR" "$PRG_FILE" > /tmp/simulator.log 2>&1 &
     SIMULATOR_PID=$!
     echo "Simulator started with PID: $SIMULATOR_PID"
 
-    # Give simulator time to start up (simple fixed wait instead of port checking)
-    echo "Waiting for simulator to initialize (15 seconds)..."
-    sleep 15
-
-    # Check if simulator is still running
-    if ! kill -0 $SIMULATOR_PID 2>/dev/null; then
-        echo -e "${YELLOW}⚠${NC} Simulator process died"
-        echo "Simulator logs:"
-        cat /tmp/simulator.log 2>/dev/null || echo "No logs available"
-        kill $XVFB_PID 2>/dev/null || true
-        return 0
-    fi
-
-    # Try to load the watchface (best effort - don't fail if this doesn't work)
-    echo "Loading watchface..."
-    timeout 10 java -classpath "$MONKEYBRAINS" \
-        com.garmin.monkeybrains.monkeydodeux.MonkeyDoDeux \
-        -f "$PRG_FILE" \
-        -d "$DEVICE" \
-        -s "$SHELL_EXE" > /tmp/monkeydo.log 2>&1 || {
-        echo -e "${YELLOW}⚠${NC} MonkeyDo timed out or failed (continuing anyway)"
-    }
-
-    # Wait for watchface to render
-    echo "Waiting for render..."
-    sleep 5
+    # Give simulator time to load and render
+    echo "Waiting for simulator to load watchface (20 seconds)..."
+    sleep 20
 
     # Capture screenshot
     echo "Capturing screenshot..."
