@@ -31,8 +31,8 @@ class TimezoneInfo {
         label = displayLabel;
         offset = 0;
         dst = false;
-        nextChange = 0;
-        lastUpdate = 0;
+        nextChange = 0L;
+        lastUpdate = 0L;
     }
 
     /**
@@ -77,7 +77,7 @@ class TimezoneInfo {
         }
 
         // Clear next change time to force refresh on next opportunity
-        nextChange = 0;
+        nextChange = 0L;
     }
 
     /**
@@ -119,15 +119,13 @@ class TimezoneInfo {
  * Manager class for all timezone data
  */
 class TimezoneDataManager {
-    private const STORAGE_KEY = "timezone_data";
-
     /**
      * Save timezone info to persistent storage
      * @param cityNum City number (1-4)
      * @param info Timezone info to save
      */
     static function saveTimezoneInfo(cityNum as Number, info as TimezoneInfo) as Void {
-        var key = STORAGE_KEY + "_" + cityNum.toString();
+        var key = "timezone_data_" + cityNum.toString();
 
         // Store as dictionary for persistence
         var data = {
@@ -150,7 +148,7 @@ class TimezoneDataManager {
      * @return Loaded or newly created TimezoneInfo
      */
     static function loadTimezoneInfo(cityNum as Number, zoneId as String, displayLabel as String) as TimezoneInfo {
-        var key = STORAGE_KEY + "_" + cityNum.toString();
+        var key = "timezone_data_" + cityNum.toString();
         var data = Storage.getValue(key);
 
         var info = new TimezoneInfo(zoneId, displayLabel);
@@ -196,7 +194,7 @@ class TimezoneDataManager {
      */
     static function clearAllData() as Void {
         for (var i = 1; i <= 4; i++) {
-            var key = STORAGE_KEY + "_" + i.toString();
+            var key = "timezone_data_" + i.toString();
             Storage.deleteValue(key);
         }
     }

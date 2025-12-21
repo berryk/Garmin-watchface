@@ -166,7 +166,7 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
                 info.nextChange = parseIso8601ToUnix(dstFrom as String);
             } else {
                 // No transition data available, assume refresh needed in 24h
-                info.nextChange = Time.now().value() + 86400;
+                info.nextChange = Time.now().value() + 86400L;
             }
 
             // Mark update time
@@ -194,7 +194,7 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
             // Find T separator
             var tIndex = dateStr.find("T");
             if (tIndex == null) {
-                return 0;
+                return 0L;
             }
 
             var datePart = dateStr.substring(0, tIndex);
@@ -203,7 +203,7 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
             // Parse date: "2024-03-31"
             var dateParts = split(datePart, "-");
             if (dateParts.size() < 3) {
-                return 0;
+                return 0L;
             }
 
             var year = dateParts[0].toNumber();
@@ -225,7 +225,7 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
             var timeParts = split(timeOnly, ":");
 
             if (timeParts.size() < 3) {
-                return 0;
+                return 0L;
             }
 
             var hour = timeParts[0].toNumber();
@@ -245,7 +245,7 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
             return moment.value();
 
         } catch (e) {
-            return 0;
+            return 0L;
         }
     }
 
