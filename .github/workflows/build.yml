@@ -79,6 +79,7 @@ jobs:
           - fenix5
           - venu
           - venu2
+          - venu2s
           - venu3
           - venu441mm
           - venu445mm
@@ -219,7 +220,7 @@ jobs:
           echo "|--------|--------------|------------|" >> $GITHUB_STEP_SUMMARY
 
           # Create a comprehensive summary
-          DEVICES=(fenix7 fenix5 venu venu2 venu3 venu441mm venu445mm venux1 venusq2 fr965 fr255 fr245 vivoactive5 vivoactive4 epix2)
+          DEVICES=(fenix7 fenix5 venu venu2 venu2s venu3 venu441mm venu445mm venux1 venusq2 fr965 fr255 fr245 vivoactive5 vivoactive4 epix2)
 
           for device in "${DEVICES[@]}"; do
             # Check for PRG file
