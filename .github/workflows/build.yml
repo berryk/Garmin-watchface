@@ -141,19 +141,20 @@ jobs:
             echo "⚠️ Screenshot not captured for ${{ matrix.device }}"
           fi
 
-      - name: Display Screenshot in Summary
+      - name: Add Build Status to Summary
         if: always()
         run: |
-          if [ -f "screenshots/${{ matrix.device }}.png" ]; then
-            # Convert screenshot to base64 for embedding in summary
-            BASE64_IMG=$(base64 -w 0 screenshots/${{ matrix.device }}.png)
-            echo "## Screenshot: ${{ matrix.device }}" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "![Screenshot](data:image/png;base64,${BASE64_IMG})" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ${{ matrix.device }}" >> $GITHUB_STEP_SUMMARY
+          if [ -f "bin/GMTWorldTime-${{ matrix.device }}.prg" ]; then
+            PRG_SIZE=$(ls -lh "bin/GMTWorldTime-${{ matrix.device }}.prg" | awk '{print $5}')
+            echo "✅ Build successful - $PRG_SIZE" >> $GITHUB_STEP_SUMMARY
           else
-            echo "## Screenshot: ${{ matrix.device }}" >> $GITHUB_STEP_SUMMARY
-            echo "⚠️ No screenshot available" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Build failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -f "screenshots/${{ matrix.device }}.png" ]; then
+            echo "📸 Screenshot captured" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No screenshot" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Upload PRG Artifact
@@ -212,17 +213,45 @@ jobs:
 
       - name: Generate Build Summary
         run: |
-          echo "## Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "# 📱 GMT World Time - Build Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Device | PRG File |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
-          for prg in all-builds/*.prg; do
-            if [ -f "$prg" ]; then
-              name=$(basename "$prg" .prg)
-              size=$(ls -lh "$prg" | awk '{print $5}')
-              echo "| ${name#GMTWorldTime-} | ✅ $size |" >> $GITHUB_STEP_SUMMARY
+          echo "| Device | Build Status | Screenshot |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|--------------|------------|" >> $GITHUB_STEP_SUMMARY
+
+          # Create a comprehensive summary
+          DEVICES=(fenix7 fenix5 venu venu2 venu3 venu441mm venu445mm venux1 venusq2 fr965 fr255 fr245 vivoactive5 vivoactive4 epix2)
+
+          for device in "${DEVICES[@]}"; do
+            # Check for PRG file
+            prg_file="all-builds/GMTWorldTime-${device}.prg"
+            if [ -f "$prg_file" ]; then
+              size=$(ls -lh "$prg_file" | awk '{print $5}')
+              build_status="✅ $size"
+            else
+              build_status="❌ Failed"
             fi
+
+            # Check for screenshot
+            screenshot_file="all-screenshots/${device}.png"
+            if [ -f "$screenshot_file" ]; then
+              screenshot_status="📸 Captured"
+            else
+              screenshot_status="⚠️ Missing"
+            fi
+
+            echo "| $device | $build_status | $screenshot_status |" >> $GITHUB_STEP_SUMMARY
           done
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Download Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- **All Builds**: \`GMTWorldTime-all-devices\` artifact" >> $GITHUB_STEP_SUMMARY
+          echo "- **All Screenshots**: \`all-screenshots\` artifact" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Report**: \`build-report\` artifact (HTML with embedded screenshots)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🌐 View Screenshots" >> $GITHUB_STEP_SUMMARY
+          echo "Download the \`build-report\` artifact and open \`index.html\` to view all screenshots in a beautiful gallery, or wait for the GitHub Pages deployment to complete." >> $GITHUB_STEP_SUMMARY
 
   # Generate HTML build report with screenshots
   generate-report:
@@ -375,6 +404,17 @@ jobs:
           path: build-report/
           retention-days: 90
 
+      - name: Add Report Summary
+        run: |
+          echo "# 📊 Build Report Generated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "A comprehensive HTML build report has been generated with all device screenshots." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📥 View Report" >> $GITHUB_STEP_SUMMARY
+          echo "1. Download the \`build-report\` artifact from this workflow run" >> $GITHUB_STEP_SUMMARY
+          echo "2. Extract and open \`index.html\` in your browser" >> $GITHUB_STEP_SUMMARY
+          echo "3. Or wait for GitHub Pages deployment (main branch only)" >> $GITHUB_STEP_SUMMARY
+
   # Deploy build report to GitHub Pages
   deploy-pages:
     needs: generate-report
@@ -396,6 +436,20 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Add Pages Deployment Summary
+        run: |
+          echo "# 🚀 Screenshots Deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🌐 View Live Build Report" >> $GITHUB_STEP_SUMMARY
+          echo "Your build report with all device screenshots is now live at:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**${{ steps.deployment.outputs.page_url }}**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The report includes:" >> $GITHUB_STEP_SUMMARY
+          echo "- 📸 Screenshots for all devices" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 Build statistics" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 File sizes for each device" >> $GITHUB_STEP_SUMMARY
 
   # Create a release on tags
   release:
