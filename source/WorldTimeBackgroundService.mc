@@ -18,6 +18,9 @@ import Toybox.Time;
 (:background)
 class WorldTimeBackgroundService extends System.ServiceDelegate {
 
+    // Current city being fetched (for callback tracking)
+    private var currentCityNum as Number = 1;
+
     /**
      * Constructor
      */
@@ -74,6 +77,9 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
         // Build API URL
         var url = "http://worldtimeapi.org/api/timezone/" + zoneId;
 
+        // Store current city number for callback
+        currentCityNum = cityNum;
+
         // Make HTTP request
         var options = {
             :method => Communications.HTTP_REQUEST_METHOD_GET,
@@ -84,17 +90,18 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
             url,
             null,
             options,
-            method(:onReceiveTimezoneData).bindWith(cityNum)
+            method(:onReceiveTimezoneData)
         );
     }
 
     /**
      * Callback for timezone data response
-     * @param cityNum City number (1-4)
      * @param responseCode HTTP response code
      * @param data Response data
      */
-    function onReceiveTimezoneData(cityNum as Number, responseCode as Number, data as Dictionary?) as Void {
+    function onReceiveTimezoneData(responseCode as Number, data as Dictionary?) as Void {
+        var cityNum = currentCityNum;
+
         if (responseCode == 200 && data != null) {
             // Parse response
             parseAndSaveTimezoneData(cityNum, data);
