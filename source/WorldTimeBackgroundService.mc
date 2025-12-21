@@ -170,7 +170,7 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
             }
 
             // Mark update time
-            info.lastUpdate = Time.now().value();
+            info.lastUpdate = Time.now().value().toLong();
 
             // Save to storage
             TimezoneDataManager.saveTimezoneInfo(cityNum, info);
@@ -242,7 +242,7 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
                 :second => sec
             });
 
-            return moment.value();
+            return moment.value().toLong();
 
         } catch (e) {
             return 0L;
