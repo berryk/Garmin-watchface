@@ -4,24 +4,36 @@
 -->
 <strings>
     <string id="AppName">GMT World Time</string>
-    
-    <!-- City 1 Settings (Top Left) -->
+
+    <!-- City Settings Titles -->
+    <string id="City1ZoneTitle">City 1 Timezone</string>
     <string id="City1LabelTitle">City 1 Abbreviation</string>
-    <string id="City1OffsetTitle">City 1 GMT Offset (hours)</string>
-    <string id="City1DSTTitle">City 1 Currently in DST</string>
-    
-    <!-- City 2 Settings (Top Right) -->
+    <string id="City2ZoneTitle">City 2 Timezone</string>
     <string id="City2LabelTitle">City 2 Abbreviation</string>
-    <string id="City2OffsetTitle">City 2 GMT Offset (hours)</string>
-    <string id="City2DSTTitle">City 2 Currently in DST</string>
-    
-    <!-- City 3 Settings (Bottom Left) -->
+    <string id="City3ZoneTitle">City 3 Timezone</string>
     <string id="City3LabelTitle">City 3 Abbreviation</string>
-    <string id="City3OffsetTitle">City 3 GMT Offset (hours)</string>
-    <string id="City3DSTTitle">City 3 Currently in DST</string>
-    
-    <!-- City 4 Settings (Bottom Right) -->
+    <string id="City4ZoneTitle">City 4 Timezone</string>
     <string id="City4LabelTitle">City 4 Abbreviation</string>
-    <string id="City4OffsetTitle">City 4 GMT Offset (hours)</string>
-    <string id="City4DSTTitle">City 4 Currently in DST</string>
+
+    <!-- Timezone Display Names -->
+    <string id="ZoneLondon">London</string>
+    <string id="ZoneParis">Paris</string>
+    <string id="ZoneBerlin">Berlin</string>
+    <string id="ZoneMoscow">Moscow</string>
+    <string id="ZoneNewYork">New York</string>
+    <string id="ZoneChicago">Chicago</string>
+    <string id="ZoneDenver">Denver</string>
+    <string id="ZoneLosAngeles">Los Angeles</string>
+    <string id="ZoneMexicoCity">Mexico City</string>
+    <string id="ZoneSaoPaulo">São Paulo</string>
+    <string id="ZoneDubai">Dubai</string>
+    <string id="ZoneKolkata">Kolkata</string>
+    <string id="ZoneSingapore">Singapore</string>
+    <string id="ZoneHongKong">Hong Kong</string>
+    <string id="ZoneTokyo">Tokyo</string>
+    <string id="ZoneShanghai">Shanghai</string>
+    <string id="ZoneSydney">Sydney</string>
+    <string id="ZoneAuckland">Auckland</string>
+    <string id="ZoneHonolulu">Honolulu</string>
+    <string id="ZoneJohannesburg">Johannesburg</string>
 </strings>

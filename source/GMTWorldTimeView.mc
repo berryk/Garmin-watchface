@@ -18,6 +18,7 @@ import Toybox.Time.Gregorian;
 import Toybox.ActivityMonitor;
 import Toybox.Application;
 import Toybox.Application.Properties;
+import Toybox.Background;
 
 /**
  * Main view class for rendering the watchface
@@ -35,22 +36,11 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
     private var centerX as Number = 0;
     private var centerY as Number = 0;
 
-    // City settings (loaded from properties)
-    private var city1Label as String = "LN";
-    private var city1Offset as Number = 0;
-    private var city1DST as Boolean = false;
-    
-    private var city2Label as String = "HK";
-    private var city2Offset as Number = 8;
-    private var city2DST as Boolean = false;
-    
-    private var city3Label as String = "NY";
-    private var city3Offset as Number = -5;
-    private var city3DST as Boolean = false;
-    
-    private var city4Label as String = "SF";
-    private var city4Offset as Number = -8;
-    private var city4DST as Boolean = false;
+    // Timezone data (loaded from storage and properties)
+    private var city1Info as TimezoneInfo?;
+    private var city2Info as TimezoneInfo?;
+    private var city3Info as TimezoneInfo?;
+    private var city4Info as TimezoneInfo?;
 
     /**
      * Constructor
@@ -61,43 +51,63 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
     }
 
     /**
-     * Load city settings from properties
+     * Load city settings from properties and storage
      */
     function loadSettings() as Void {
         try {
-            // City 1
+            // Load City 1
+            var zone1 = Properties.getValue("City1Zone");
             var label1 = Properties.getValue("City1Label");
-            if (label1 != null) { city1Label = label1 as String; }
-            var offset1 = Properties.getValue("City1Offset");
-            if (offset1 != null) { city1Offset = offset1 as Number; }
-            var dst1 = Properties.getValue("City1DST");
-            if (dst1 != null) { city1DST = dst1 as Boolean; }
-            
-            // City 2
+            if (zone1 != null && zone1 instanceof String) {
+                var lbl = (label1 != null && label1 instanceof String) ? label1 as String : "LN";
+                city1Info = TimezoneDataManager.loadTimezoneInfo(1, zone1 as String, lbl);
+            }
+
+            // Load City 2
+            var zone2 = Properties.getValue("City2Zone");
             var label2 = Properties.getValue("City2Label");
-            if (label2 != null) { city2Label = label2 as String; }
-            var offset2 = Properties.getValue("City2Offset");
-            if (offset2 != null) { city2Offset = offset2 as Number; }
-            var dst2 = Properties.getValue("City2DST");
-            if (dst2 != null) { city2DST = dst2 as Boolean; }
-            
-            // City 3
+            if (zone2 != null && zone2 instanceof String) {
+                var lbl = (label2 != null && label2 instanceof String) ? label2 as String : "HK";
+                city2Info = TimezoneDataManager.loadTimezoneInfo(2, zone2 as String, lbl);
+            }
+
+            // Load City 3
+            var zone3 = Properties.getValue("City3Zone");
             var label3 = Properties.getValue("City3Label");
-            if (label3 != null) { city3Label = label3 as String; }
-            var offset3 = Properties.getValue("City3Offset");
-            if (offset3 != null) { city3Offset = offset3 as Number; }
-            var dst3 = Properties.getValue("City3DST");
-            if (dst3 != null) { city3DST = dst3 as Boolean; }
-            
-            // City 4
+            if (zone3 != null && zone3 instanceof String) {
+                var lbl = (label3 != null && label3 instanceof String) ? label3 as String : "NY";
+                city3Info = TimezoneDataManager.loadTimezoneInfo(3, zone3 as String, lbl);
+            }
+
+            // Load City 4
+            var zone4 = Properties.getValue("City4Zone");
             var label4 = Properties.getValue("City4Label");
-            if (label4 != null) { city4Label = label4 as String; }
-            var offset4 = Properties.getValue("City4Offset");
-            if (offset4 != null) { city4Offset = offset4 as Number; }
-            var dst4 = Properties.getValue("City4DST");
-            if (dst4 != null) { city4DST = dst4 as Boolean; }
+            if (zone4 != null && zone4 instanceof String) {
+                var lbl = (label4 != null && label4 instanceof String) ? label4 as String : "SF";
+                city4Info = TimezoneDataManager.loadTimezoneInfo(4, zone4 as String, lbl);
+            }
+
+            // Request background update if any timezone needs refresh
+            requestBackgroundUpdateIfNeeded();
         } catch (e) {
-            // Use defaults if properties fail to load
+            // Use defaults if loading fails
+        }
+    }
+
+    /**
+     * Request background update if timezone data is stale
+     */
+    function requestBackgroundUpdateIfNeeded() as Void {
+        var needsUpdate = false;
+
+        if (city1Info != null && city1Info.isStale()) { needsUpdate = true; }
+        if (city2Info != null && city2Info.isStale()) { needsUpdate = true; }
+        if (city3Info != null && city3Info.isStale()) { needsUpdate = true; }
+        if (city4Info != null && city4Info.isStale()) { needsUpdate = true; }
+
+        if (needsUpdate) {
+            // Trigger background service to fetch fresh data
+            Background.registerForTemporalEvent(new Time.Duration(5));
         }
     }
 
@@ -206,17 +216,21 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
      * @param y Vertical position
      */
     private function drawWorldTimesTop(dc as Dc, clockTime as System.ClockTime, y as Number) as Void {
-        // Calculate offsets in seconds, add 1 hour if DST is active
-        var offset1Seconds = city1Offset * 3600 + (city1DST ? 3600 : 0);
-        var offset2Seconds = city2Offset * 3600 + (city2DST ? 3600 : 0);
-        
-        var hour1 = getWorldTimeHour(clockTime, offset1Seconds);
-        var hour2 = getWorldTimeHour(clockTime, offset2Seconds);
-        
         var spacing = screenWidth * 0.25;
-        
-        drawWorldTimeItem(dc, centerX - spacing.toNumber(), y, city1Label, hour1);
-        drawWorldTimeItem(dc, centerX + spacing.toNumber(), y, city2Label, hour2);
+
+        // Draw City 1
+        if (city1Info != null) {
+            checkAndApplyPrediction(city1Info, 1);
+            var hour1 = city1Info.getHour(clockTime);
+            drawWorldTimeItem(dc, centerX - spacing.toNumber(), y, city1Info.label, hour1);
+        }
+
+        // Draw City 2
+        if (city2Info != null) {
+            checkAndApplyPrediction(city2Info, 2);
+            var hour2 = city2Info.getHour(clockTime);
+            drawWorldTimeItem(dc, centerX + spacing.toNumber(), y, city2Info.label, hour2);
+        }
     }
 
     /**
@@ -226,17 +240,21 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
      * @param y Vertical position
      */
     private function drawWorldTimesBottom(dc as Dc, clockTime as System.ClockTime, y as Number) as Void {
-        // Calculate offsets in seconds, add 1 hour if DST is active
-        var offset3Seconds = city3Offset * 3600 + (city3DST ? 3600 : 0);
-        var offset4Seconds = city4Offset * 3600 + (city4DST ? 3600 : 0);
-        
-        var hour3 = getWorldTimeHour(clockTime, offset3Seconds);
-        var hour4 = getWorldTimeHour(clockTime, offset4Seconds);
-        
         var spacing = screenWidth * 0.25;
-        
-        drawWorldTimeItem(dc, centerX - spacing.toNumber(), y, city3Label, hour3);
-        drawWorldTimeItem(dc, centerX + spacing.toNumber(), y, city4Label, hour4);
+
+        // Draw City 3
+        if (city3Info != null) {
+            checkAndApplyPrediction(city3Info, 3);
+            var hour3 = city3Info.getHour(clockTime);
+            drawWorldTimeItem(dc, centerX - spacing.toNumber(), y, city3Info.label, hour3);
+        }
+
+        // Draw City 4
+        if (city4Info != null) {
+            checkAndApplyPrediction(city4Info, 4);
+            var hour4 = city4Info.getHour(clockTime);
+            drawWorldTimeItem(dc, centerX + spacing.toNumber(), y, city4Info.label, hour4);
+        }
     }
 
     /**
@@ -267,40 +285,24 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
     }
 
     /**
-     * Calculate the hour in a given timezone
-     * @param clockTime Current device clock time
-     * @param tzOffset Timezone offset from UTC in seconds
-     * @return Hour in the target timezone (0-23)
+     * Check if timezone data has passed its transition time and apply prediction
+     * @param info Timezone info to check
+     * @param cityNum City number (for saving updated data)
      */
-    private function getWorldTimeHour(clockTime as System.ClockTime, tzOffset as Number) as Number {
-        // Get local time offset from UTC
-        var localOffset = clockTime.timeZoneOffset;
-        
-        // Calculate UTC hour from local time
-        var localSeconds = clockTime.hour * 3600 + clockTime.min * 60 + clockTime.sec;
-        var utcSeconds = localSeconds - localOffset;
-        
-        // Add target timezone offset
-        var targetSeconds = utcSeconds + tzOffset;
-        
-        // Handle day wraparound
-        if (targetSeconds < 0) {
-            targetSeconds += 86400; // Add 24 hours
-        } else if (targetSeconds >= 86400) {
-            targetSeconds -= 86400; // Subtract 24 hours
+    private function checkAndApplyPrediction(info as TimezoneInfo, cityNum as Number) as Void {
+        var now = Time.now().value();
+
+        // Check if we've passed the predicted transition time
+        if (info.nextChange > 0 && now > info.nextChange) {
+            // Apply heuristic prediction (flip DST, adjust offset by ±1 hour)
+            info.applyPrediction();
+
+            // Save updated data
+            TimezoneDataManager.saveTimezoneInfo(cityNum, info);
+
+            // Request background update to get exact data
+            Background.registerForTemporalEvent(new Time.Duration(5));
         }
-        
-        // Extract hour
-        var hour = (targetSeconds / 3600).toNumber();
-        
-        // Ensure hour is in valid range
-        if (hour < 0) {
-            hour += 24;
-        } else if (hour >= 24) {
-            hour -= 24;
-        }
-        
-        return hour;
     }
 
     /**

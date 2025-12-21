@@ -14,6 +14,8 @@
 import Toybox.Application;
 import Toybox.Lang;
 import Toybox.WatchUi;
+import Toybox.Background;
+import Toybox.Time;
 
 /**
  * Main application class
@@ -45,7 +47,32 @@ class GMTWorldTimeApp extends Application.AppBase {
         if (_view != null) {
             _view.loadSettings();
         }
+
+        // Trigger background update to fetch new timezone data
+        Background.registerForTemporalEvent(new Time.Duration(5));
+
         WatchUi.requestUpdate();
+    }
+
+    /**
+     * Called when background data is available
+     * @param data Background data
+     */
+    function onBackgroundData(data as Application.PersistableType) as Void {
+        // Background service has updated timezone data
+        // Reload settings to get fresh data
+        if (_view != null) {
+            _view.loadSettings();
+        }
+        WatchUi.requestUpdate();
+    }
+
+    /**
+     * Get the background service delegate
+     * @return Service delegate instance
+     */
+    function getServiceDelegate() as [System.ServiceDelegate] {
+        return [new WorldTimeBackgroundService()];
     }
 
     /**
