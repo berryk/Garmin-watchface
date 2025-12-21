@@ -12,7 +12,7 @@ import Toybox.Time;
 
 /**
  * Helper function to map timezone ID to timezone string
- * @param zoneId Numeric timezone ID (0-19)
+ * @param zoneId Numeric timezone ID (0-20)
  * @return Timezone string for WorldTimeAPI
  */
 function getTimezoneString(zoneId as Number) as String {
@@ -37,6 +37,7 @@ function getTimezoneString(zoneId as Number) as String {
         case 17: return "Pacific/Auckland";
         case 18: return "Pacific/Honolulu";
         case 19: return "Africa/Johannesburg";
+        case 20: return "Europe/Vienna";
         default: return "Europe/London"; // Fallback to London
     }
 }
