@@ -55,18 +55,21 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
         var zoneId = Properties.getValue(zoneKey);
         var label = Properties.getValue(labelKey);
 
-        if (zoneId == null || !(zoneId instanceof String) || zoneId.equals("")) {
+        if (zoneId == null || !(zoneId instanceof Number)) {
             // No timezone configured, skip to next
             fetchTimezoneData(cityNum + 1);
             return;
         }
+
+        // Convert numeric ID to timezone string
+        var zoneStr = getTimezoneString(zoneId as Number);
 
         if (label == null || !(label instanceof String)) {
             label = "";
         }
 
         // Load existing data to check if refresh needed
-        var info = TimezoneDataManager.loadTimezoneInfo(cityNum, zoneId as String, label as String);
+        var info = TimezoneDataManager.loadTimezoneInfo(cityNum, zoneStr, label as String);
 
         if (!info.isStale()) {
             // Data is still fresh, skip to next
@@ -75,7 +78,7 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
         }
 
         // Build API URL
-        var url = "http://worldtimeapi.org/api/timezone/" + zoneId;
+        var url = "http://worldtimeapi.org/api/timezone/" + zoneStr;
 
         // Store current city number for callback
         currentCityNum = cityNum;
@@ -126,16 +129,19 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
             var zoneId = Properties.getValue(zoneKey);
             var label = Properties.getValue(labelKey);
 
-            if (zoneId == null || !(zoneId instanceof String)) {
+            if (zoneId == null || !(zoneId instanceof Number)) {
                 return;
             }
+
+            // Convert numeric ID to timezone string
+            var zoneStr = getTimezoneString(zoneId as Number);
 
             if (label == null || !(label instanceof String)) {
                 label = "";
             }
 
             // Create timezone info object
-            var info = new TimezoneInfo(zoneId as String, label as String);
+            var info = new TimezoneInfo(zoneStr, label as String);
 
             // Parse offset data
             // WorldTimeAPI returns: raw_offset (base timezone) + dst_offset (if in DST)

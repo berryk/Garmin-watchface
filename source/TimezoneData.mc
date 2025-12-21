@@ -11,6 +11,37 @@ import Toybox.Application.Storage;
 import Toybox.Time;
 
 /**
+ * Helper function to map timezone ID to timezone string
+ * @param zoneId Numeric timezone ID (0-19)
+ * @return Timezone string for WorldTimeAPI
+ */
+function getTimezoneString(zoneId as Number) as String {
+    switch (zoneId) {
+        case 0: return "Europe/London";
+        case 1: return "Europe/Paris";
+        case 2: return "Europe/Berlin";
+        case 3: return "Europe/Moscow";
+        case 4: return "America/New_York";
+        case 5: return "America/Chicago";
+        case 6: return "America/Denver";
+        case 7: return "America/Los_Angeles";
+        case 8: return "America/Mexico_City";
+        case 9: return "America/Sao_Paulo";
+        case 10: return "Asia/Dubai";
+        case 11: return "Asia/Kolkata";
+        case 12: return "Asia/Singapore";
+        case 13: return "Asia/Hong_Kong";
+        case 14: return "Asia/Tokyo";
+        case 15: return "Asia/Shanghai";
+        case 16: return "Australia/Sydney";
+        case 17: return "Pacific/Auckland";
+        case 18: return "Pacific/Honolulu";
+        case 19: return "Africa/Johannesburg";
+        default: return "Europe/London"; // Fallback to London
+    }
+}
+
+/**
  * Data structure for a single timezone
  */
 class TimezoneInfo {

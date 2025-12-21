@@ -7,26 +7,26 @@
     <!-- City 1 Settings (Top Left) -->
     <setting propertyKey="@Properties.City1Zone" title="@Strings.City1ZoneTitle">
         <settingConfig type="list">
-            <listEntry value="Europe/London">@Strings.ZoneLondon</listEntry>
-            <listEntry value="Europe/Paris">@Strings.ZoneParis</listEntry>
-            <listEntry value="Europe/Berlin">@Strings.ZoneBerlin</listEntry>
-            <listEntry value="Europe/Moscow">@Strings.ZoneMoscow</listEntry>
-            <listEntry value="America/New_York">@Strings.ZoneNewYork</listEntry>
-            <listEntry value="America/Chicago">@Strings.ZoneChicago</listEntry>
-            <listEntry value="America/Denver">@Strings.ZoneDenver</listEntry>
-            <listEntry value="America/Los_Angeles">@Strings.ZoneLosAngeles</listEntry>
-            <listEntry value="America/Mexico_City">@Strings.ZoneMexicoCity</listEntry>
-            <listEntry value="America/Sao_Paulo">@Strings.ZoneSaoPaulo</listEntry>
-            <listEntry value="Asia/Dubai">@Strings.ZoneDubai</listEntry>
-            <listEntry value="Asia/Kolkata">@Strings.ZoneKolkata</listEntry>
-            <listEntry value="Asia/Singapore">@Strings.ZoneSingapore</listEntry>
-            <listEntry value="Asia/Hong_Kong">@Strings.ZoneHongKong</listEntry>
-            <listEntry value="Asia/Tokyo">@Strings.ZoneTokyo</listEntry>
-            <listEntry value="Asia/Shanghai">@Strings.ZoneShanghai</listEntry>
-            <listEntry value="Australia/Sydney">@Strings.ZoneSydney</listEntry>
-            <listEntry value="Pacific/Auckland">@Strings.ZoneAuckland</listEntry>
-            <listEntry value="Pacific/Honolulu">@Strings.ZoneHonolulu</listEntry>
-            <listEntry value="Africa/Johannesburg">@Strings.ZoneJohannesburg</listEntry>
+            <listEntry value="0">@Strings.ZoneLondon</listEntry>
+            <listEntry value="1">@Strings.ZoneParis</listEntry>
+            <listEntry value="2">@Strings.ZoneBerlin</listEntry>
+            <listEntry value="3">@Strings.ZoneMoscow</listEntry>
+            <listEntry value="4">@Strings.ZoneNewYork</listEntry>
+            <listEntry value="5">@Strings.ZoneChicago</listEntry>
+            <listEntry value="6">@Strings.ZoneDenver</listEntry>
+            <listEntry value="7">@Strings.ZoneLosAngeles</listEntry>
+            <listEntry value="8">@Strings.ZoneMexicoCity</listEntry>
+            <listEntry value="9">@Strings.ZoneSaoPaulo</listEntry>
+            <listEntry value="10">@Strings.ZoneDubai</listEntry>
+            <listEntry value="11">@Strings.ZoneKolkata</listEntry>
+            <listEntry value="12">@Strings.ZoneSingapore</listEntry>
+            <listEntry value="13">@Strings.ZoneHongKong</listEntry>
+            <listEntry value="14">@Strings.ZoneTokyo</listEntry>
+            <listEntry value="15">@Strings.ZoneShanghai</listEntry>
+            <listEntry value="16">@Strings.ZoneSydney</listEntry>
+            <listEntry value="17">@Strings.ZoneAuckland</listEntry>
+            <listEntry value="18">@Strings.ZoneHonolulu</listEntry>
+            <listEntry value="19">@Strings.ZoneJohannesburg</listEntry>
         </settingConfig>
     </setting>
     <setting propertyKey="@Properties.City1Label" title="@Strings.City1LabelTitle">
@@ -36,26 +36,26 @@
     <!-- City 2 Settings (Top Right) -->
     <setting propertyKey="@Properties.City2Zone" title="@Strings.City2ZoneTitle">
         <settingConfig type="list">
-            <listEntry value="Europe/London">@Strings.ZoneLondon</listEntry>
-            <listEntry value="Europe/Paris">@Strings.ZoneParis</listEntry>
-            <listEntry value="Europe/Berlin">@Strings.ZoneBerlin</listEntry>
-            <listEntry value="Europe/Moscow">@Strings.ZoneMoscow</listEntry>
-            <listEntry value="America/New_York">@Strings.ZoneNewYork</listEntry>
-            <listEntry value="America/Chicago">@Strings.ZoneChicago</listEntry>
-            <listEntry value="America/Denver">@Strings.ZoneDenver</listEntry>
-            <listEntry value="America/Los_Angeles">@Strings.ZoneLosAngeles</listEntry>
-            <listEntry value="America/Mexico_City">@Strings.ZoneMexicoCity</listEntry>
-            <listEntry value="America/Sao_Paulo">@Strings.ZoneSaoPaulo</listEntry>
-            <listEntry value="Asia/Dubai">@Strings.ZoneDubai</listEntry>
-            <listEntry value="Asia/Kolkata">@Strings.ZoneKolkata</listEntry>
-            <listEntry value="Asia/Singapore">@Strings.ZoneSingapore</listEntry>
-            <listEntry value="Asia/Hong_Kong">@Strings.ZoneHongKong</listEntry>
-            <listEntry value="Asia/Tokyo">@Strings.ZoneTokyo</listEntry>
-            <listEntry value="Asia/Shanghai">@Strings.ZoneShanghai</listEntry>
-            <listEntry value="Australia/Sydney">@Strings.ZoneSydney</listEntry>
-            <listEntry value="Pacific/Auckland">@Strings.ZoneAuckland</listEntry>
-            <listEntry value="Pacific/Honolulu">@Strings.ZoneHonolulu</listEntry>
-            <listEntry value="Africa/Johannesburg">@Strings.ZoneJohannesburg</listEntry>
+            <listEntry value="0">@Strings.ZoneLondon</listEntry>
+            <listEntry value="1">@Strings.ZoneParis</listEntry>
+            <listEntry value="2">@Strings.ZoneBerlin</listEntry>
+            <listEntry value="3">@Strings.ZoneMoscow</listEntry>
+            <listEntry value="4">@Strings.ZoneNewYork</listEntry>
+            <listEntry value="5">@Strings.ZoneChicago</listEntry>
+            <listEntry value="6">@Strings.ZoneDenver</listEntry>
+            <listEntry value="7">@Strings.ZoneLosAngeles</listEntry>
+            <listEntry value="8">@Strings.ZoneMexicoCity</listEntry>
+            <listEntry value="9">@Strings.ZoneSaoPaulo</listEntry>
+            <listEntry value="10">@Strings.ZoneDubai</listEntry>
+            <listEntry value="11">@Strings.ZoneKolkata</listEntry>
+            <listEntry value="12">@Strings.ZoneSingapore</listEntry>
+            <listEntry value="13">@Strings.ZoneHongKong</listEntry>
+            <listEntry value="14">@Strings.ZoneTokyo</listEntry>
+            <listEntry value="15">@Strings.ZoneShanghai</listEntry>
+            <listEntry value="16">@Strings.ZoneSydney</listEntry>
+            <listEntry value="17">@Strings.ZoneAuckland</listEntry>
+            <listEntry value="18">@Strings.ZoneHonolulu</listEntry>
+            <listEntry value="19">@Strings.ZoneJohannesburg</listEntry>
         </settingConfig>
     </setting>
     <setting propertyKey="@Properties.City2Label" title="@Strings.City2LabelTitle">
@@ -65,26 +65,26 @@
     <!-- City 3 Settings (Bottom Left) -->
     <setting propertyKey="@Properties.City3Zone" title="@Strings.City3ZoneTitle">
         <settingConfig type="list">
-            <listEntry value="Europe/London">@Strings.ZoneLondon</listEntry>
-            <listEntry value="Europe/Paris">@Strings.ZoneParis</listEntry>
-            <listEntry value="Europe/Berlin">@Strings.ZoneBerlin</listEntry>
-            <listEntry value="Europe/Moscow">@Strings.ZoneMoscow</listEntry>
-            <listEntry value="America/New_York">@Strings.ZoneNewYork</listEntry>
-            <listEntry value="America/Chicago">@Strings.ZoneChicago</listEntry>
-            <listEntry value="America/Denver">@Strings.ZoneDenver</listEntry>
-            <listEntry value="America/Los_Angeles">@Strings.ZoneLosAngeles</listEntry>
-            <listEntry value="America/Mexico_City">@Strings.ZoneMexicoCity</listEntry>
-            <listEntry value="America/Sao_Paulo">@Strings.ZoneSaoPaulo</listEntry>
-            <listEntry value="Asia/Dubai">@Strings.ZoneDubai</listEntry>
-            <listEntry value="Asia/Kolkata">@Strings.ZoneKolkata</listEntry>
-            <listEntry value="Asia/Singapore">@Strings.ZoneSingapore</listEntry>
-            <listEntry value="Asia/Hong_Kong">@Strings.ZoneHongKong</listEntry>
-            <listEntry value="Asia/Tokyo">@Strings.ZoneTokyo</listEntry>
-            <listEntry value="Asia/Shanghai">@Strings.ZoneShanghai</listEntry>
-            <listEntry value="Australia/Sydney">@Strings.ZoneSydney</listEntry>
-            <listEntry value="Pacific/Auckland">@Strings.ZoneAuckland</listEntry>
-            <listEntry value="Pacific/Honolulu">@Strings.ZoneHonolulu</listEntry>
-            <listEntry value="Africa/Johannesburg">@Strings.ZoneJohannesburg</listEntry>
+            <listEntry value="0">@Strings.ZoneLondon</listEntry>
+            <listEntry value="1">@Strings.ZoneParis</listEntry>
+            <listEntry value="2">@Strings.ZoneBerlin</listEntry>
+            <listEntry value="3">@Strings.ZoneMoscow</listEntry>
+            <listEntry value="4">@Strings.ZoneNewYork</listEntry>
+            <listEntry value="5">@Strings.ZoneChicago</listEntry>
+            <listEntry value="6">@Strings.ZoneDenver</listEntry>
+            <listEntry value="7">@Strings.ZoneLosAngeles</listEntry>
+            <listEntry value="8">@Strings.ZoneMexicoCity</listEntry>
+            <listEntry value="9">@Strings.ZoneSaoPaulo</listEntry>
+            <listEntry value="10">@Strings.ZoneDubai</listEntry>
+            <listEntry value="11">@Strings.ZoneKolkata</listEntry>
+            <listEntry value="12">@Strings.ZoneSingapore</listEntry>
+            <listEntry value="13">@Strings.ZoneHongKong</listEntry>
+            <listEntry value="14">@Strings.ZoneTokyo</listEntry>
+            <listEntry value="15">@Strings.ZoneShanghai</listEntry>
+            <listEntry value="16">@Strings.ZoneSydney</listEntry>
+            <listEntry value="17">@Strings.ZoneAuckland</listEntry>
+            <listEntry value="18">@Strings.ZoneHonolulu</listEntry>
+            <listEntry value="19">@Strings.ZoneJohannesburg</listEntry>
         </settingConfig>
     </setting>
     <setting propertyKey="@Properties.City3Label" title="@Strings.City3LabelTitle">
@@ -94,26 +94,26 @@
     <!-- City 4 Settings (Bottom Right) -->
     <setting propertyKey="@Properties.City4Zone" title="@Strings.City4ZoneTitle">
         <settingConfig type="list">
-            <listEntry value="Europe/London">@Strings.ZoneLondon</listEntry>
-            <listEntry value="Europe/Paris">@Strings.ZoneParis</listEntry>
-            <listEntry value="Europe/Berlin">@Strings.ZoneBerlin</listEntry>
-            <listEntry value="Europe/Moscow">@Strings.ZoneMoscow</listEntry>
-            <listEntry value="America/New_York">@Strings.ZoneNewYork</listEntry>
-            <listEntry value="America/Chicago">@Strings.ZoneChicago</listEntry>
-            <listEntry value="America/Denver">@Strings.ZoneDenver</listEntry>
-            <listEntry value="America/Los_Angeles">@Strings.ZoneLosAngeles</listEntry>
-            <listEntry value="America/Mexico_City">@Strings.ZoneMexicoCity</listEntry>
-            <listEntry value="America/Sao_Paulo">@Strings.ZoneSaoPaulo</listEntry>
-            <listEntry value="Asia/Dubai">@Strings.ZoneDubai</listEntry>
-            <listEntry value="Asia/Kolkata">@Strings.ZoneKolkata</listEntry>
-            <listEntry value="Asia/Singapore">@Strings.ZoneSingapore</listEntry>
-            <listEntry value="Asia/Hong_Kong">@Strings.ZoneHongKong</listEntry>
-            <listEntry value="Asia/Tokyo">@Strings.ZoneTokyo</listEntry>
-            <listEntry value="Asia/Shanghai">@Strings.ZoneShanghai</listEntry>
-            <listEntry value="Australia/Sydney">@Strings.ZoneSydney</listEntry>
-            <listEntry value="Pacific/Auckland">@Strings.ZoneAuckland</listEntry>
-            <listEntry value="Pacific/Honolulu">@Strings.ZoneHonolulu</listEntry>
-            <listEntry value="Africa/Johannesburg">@Strings.ZoneJohannesburg</listEntry>
+            <listEntry value="0">@Strings.ZoneLondon</listEntry>
+            <listEntry value="1">@Strings.ZoneParis</listEntry>
+            <listEntry value="2">@Strings.ZoneBerlin</listEntry>
+            <listEntry value="3">@Strings.ZoneMoscow</listEntry>
+            <listEntry value="4">@Strings.ZoneNewYork</listEntry>
+            <listEntry value="5">@Strings.ZoneChicago</listEntry>
+            <listEntry value="6">@Strings.ZoneDenver</listEntry>
+            <listEntry value="7">@Strings.ZoneLosAngeles</listEntry>
+            <listEntry value="8">@Strings.ZoneMexicoCity</listEntry>
+            <listEntry value="9">@Strings.ZoneSaoPaulo</listEntry>
+            <listEntry value="10">@Strings.ZoneDubai</listEntry>
+            <listEntry value="11">@Strings.ZoneKolkata</listEntry>
+            <listEntry value="12">@Strings.ZoneSingapore</listEntry>
+            <listEntry value="13">@Strings.ZoneHongKong</listEntry>
+            <listEntry value="14">@Strings.ZoneTokyo</listEntry>
+            <listEntry value="15">@Strings.ZoneShanghai</listEntry>
+            <listEntry value="16">@Strings.ZoneSydney</listEntry>
+            <listEntry value="17">@Strings.ZoneAuckland</listEntry>
+            <listEntry value="18">@Strings.ZoneHonolulu</listEntry>
+            <listEntry value="19">@Strings.ZoneJohannesburg</listEntry>
         </settingConfig>
     </setting>
     <setting propertyKey="@Properties.City4Label" title="@Strings.City4LabelTitle">

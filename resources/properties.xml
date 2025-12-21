@@ -4,19 +4,19 @@
     Default values for configurable settings
 -->
 <properties>
-    <!-- City 1 (Top Left) - Default: London -->
-    <property id="City1Zone" type="string">Europe/London</property>
+    <!-- City 1 (Top Left) - Default: London (ID 0) -->
+    <property id="City1Zone" type="number">0</property>
     <property id="City1Label" type="string">LN</property>
 
-    <!-- City 2 (Top Right) - Default: Hong Kong -->
-    <property id="City2Zone" type="string">Asia/Hong_Kong</property>
+    <!-- City 2 (Top Right) - Default: Hong Kong (ID 13) -->
+    <property id="City2Zone" type="number">13</property>
     <property id="City2Label" type="string">HK</property>
 
-    <!-- City 3 (Bottom Left) - Default: New York -->
-    <property id="City3Zone" type="string">America/New_York</property>
+    <!-- City 3 (Bottom Left) - Default: New York (ID 4) -->
+    <property id="City3Zone" type="number">4</property>
     <property id="City3Label" type="string">NY</property>
 
-    <!-- City 4 (Bottom Right) - Default: San Francisco -->
-    <property id="City4Zone" type="string">America/Los_Angeles</property>
+    <!-- City 4 (Bottom Right) - Default: Los Angeles (ID 7) -->
+    <property id="City4Zone" type="number">7</property>
     <property id="City4Label" type="string">SF</property>
 </properties>

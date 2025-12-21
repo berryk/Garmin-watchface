@@ -56,35 +56,39 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
     function loadSettings() as Void {
         try {
             // Load City 1
-            var zone1 = Properties.getValue("City1Zone");
+            var zone1Id = Properties.getValue("City1Zone");
             var label1 = Properties.getValue("City1Label");
-            if (zone1 != null && zone1 instanceof String) {
+            if (zone1Id != null && zone1Id instanceof Number) {
+                var zoneStr = getTimezoneString(zone1Id as Number);
                 var lbl = (label1 != null && label1 instanceof String) ? label1 as String : "LN";
-                city1Info = TimezoneDataManager.loadTimezoneInfo(1, zone1 as String, lbl);
+                city1Info = TimezoneDataManager.loadTimezoneInfo(1, zoneStr, lbl);
             }
 
             // Load City 2
-            var zone2 = Properties.getValue("City2Zone");
+            var zone2Id = Properties.getValue("City2Zone");
             var label2 = Properties.getValue("City2Label");
-            if (zone2 != null && zone2 instanceof String) {
+            if (zone2Id != null && zone2Id instanceof Number) {
+                var zoneStr = getTimezoneString(zone2Id as Number);
                 var lbl = (label2 != null && label2 instanceof String) ? label2 as String : "HK";
-                city2Info = TimezoneDataManager.loadTimezoneInfo(2, zone2 as String, lbl);
+                city2Info = TimezoneDataManager.loadTimezoneInfo(2, zoneStr, lbl);
             }
 
             // Load City 3
-            var zone3 = Properties.getValue("City3Zone");
+            var zone3Id = Properties.getValue("City3Zone");
             var label3 = Properties.getValue("City3Label");
-            if (zone3 != null && zone3 instanceof String) {
+            if (zone3Id != null && zone3Id instanceof Number) {
+                var zoneStr = getTimezoneString(zone3Id as Number);
                 var lbl = (label3 != null && label3 instanceof String) ? label3 as String : "NY";
-                city3Info = TimezoneDataManager.loadTimezoneInfo(3, zone3 as String, lbl);
+                city3Info = TimezoneDataManager.loadTimezoneInfo(3, zoneStr, lbl);
             }
 
             // Load City 4
-            var zone4 = Properties.getValue("City4Zone");
+            var zone4Id = Properties.getValue("City4Zone");
             var label4 = Properties.getValue("City4Label");
-            if (zone4 != null && zone4 instanceof String) {
+            if (zone4Id != null && zone4Id instanceof Number) {
+                var zoneStr = getTimezoneString(zone4Id as Number);
                 var lbl = (label4 != null && label4 instanceof String) ? label4 as String : "SF";
-                city4Info = TimezoneDataManager.loadTimezoneInfo(4, zone4 as String, lbl);
+                city4Info = TimezoneDataManager.loadTimezoneInfo(4, zoneStr, lbl);
             }
 
             // Request background update if any timezone needs refresh
