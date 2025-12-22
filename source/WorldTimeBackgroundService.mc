@@ -78,7 +78,7 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
         }
 
         // Build API URL
-        var url = "http://worldtimeapi.org/api/timezone/" + zoneStr;
+        var url = "https://worldtimeapi.org/api/timezone/" + zoneStr;
 
         // Store current city number for callback
         currentCityNum = cityNum;
