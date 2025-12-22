@@ -83,32 +83,6 @@ Alternative - Use the SDK Manager:
 
 ## Building the Watchface
 
-### Using Docker (Recommended for CI/CD)
-
-A Dockerfile is included for building the watchface in a containerized environment with all dependencies pre-installed.
-
-**Build the Docker image:**
-```bash
-docker build -t garmin-watchface-builder .
-```
-
-**Build the watchface:**
-```bash
-# Build for all devices
-docker run --rm -v ${PWD}:/workspace garmin-watchface-builder bash -c "cd /workspace && ./build_all_devices.sh"
-
-# Build for a specific device
-docker run --rm -v ${PWD}:/workspace garmin-watchface-builder bash -c "cd /workspace && mkdir -p bin && java -jar ~/.Garmin/ConnectIQ/Sdks/sdk/bin/monkeybrains.jar -o bin/GMTWorldTime-fenix7.prg -f monkey.jungle -d fenix7 -y developer_key.der"
-```
-
-The Docker image includes:
-- Connect IQ SDK 8.4.0
-- Device files for 162+ Garmin devices (downloaded from [GitHub releases](https://github.com/berryk/Garmin-watchface/releases/tag/devices-v1.0.0))
-- Java 17 runtime
-- All build dependencies
-
-**Note**: The device files are automatically downloaded from the GitHub release during the Docker build process and placed in `~/.Garmin/ConnectIQ/Devices/`.
-
 ### Quick Build with Screenshot Tool
 
 Run the automated build and screenshot tool:

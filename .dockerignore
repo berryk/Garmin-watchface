@@ -1,41 +1,36 @@
-# Git
+# Git files
 .git
-.github
 .gitignore
+.github
 
 # Build artifacts
+*.prg
 bin/
+*.png
 screenshots/
 
-# Developer keys (never include in Docker images)
-*.pem
-*.der
-*.p12
-*.keystore
-developer_key*
+# Developer keys (will be generated in container)
+developer_key.pem
+developer_key.der
+
+# SDK (will be downloaded in container or workflow)
+connectiq-sdk-*
+sdk/
 
 # IDE files
 .vscode/
-*.code-workspace
 .idea/
+*.swp
+*.swo
+
+# Logs
+*.log
 
 # OS files
 .DS_Store
 Thumbs.db
-desktop.ini
 
-# Temporary files
-*.tmp
-*.bak
-*.log
-
-# Device files (will be downloaded from release)
-connectiq-devices.zip
-
-# Test files
-test/
-preview/
-
-# Build scripts (not needed in container)
-*.bat
-*.ps1
+# Documentation
+README.md
+LICENSE
+*.md
