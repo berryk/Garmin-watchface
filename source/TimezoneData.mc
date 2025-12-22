@@ -186,14 +186,23 @@ class TimezoneDataManager {
         var key = "timezone_data_" + cityNum.toString();
         var data = Storage.getValue(key);
 
+        System.println("TZDATA: Loading timezone for City " + cityNum);
+        System.println("TZDATA: Requested timezone ID = " + zoneId);
+        System.println("TZDATA: Requested label = " + displayLabel);
+
         var info = new TimezoneInfo(zoneId, displayLabel);
 
         if (data != null && data instanceof Dictionary) {
+            System.println("TZDATA: Found cached data in storage");
+
             // Check if cached timezone matches requested timezone
             var cachedId = data.get("id");
+            System.println("TZDATA: Cached timezone ID = " + cachedId);
 
             // Only use cached data if timezone hasn't changed
             if (cachedId != null && cachedId instanceof String && cachedId.equals(zoneId)) {
+                System.println("TZDATA: Timezone MATCH - using cached data");
+
                 // Same timezone, restore cached data
                 var offset = data.get("offset");
                 if (offset != null && offset instanceof Number) {
@@ -219,8 +228,14 @@ class TimezoneDataManager {
                 if (lastUpdate != null && lastUpdate instanceof Long) {
                     info.lastUpdate = lastUpdate;
                 }
+
+                System.println("TZDATA: Loaded - offset=" + info.offset + ", lastUpdate=" + info.lastUpdate);
+            } else {
+                System.println("TZDATA: Timezone MISMATCH - discarding cached data, will fetch fresh data");
+                System.println("TZDATA: Returning fresh TimezoneInfo with lastUpdate=0");
             }
-            // If timezone changed, keep fresh TimezoneInfo (with lastUpdate=0, marking it stale)
+        } else {
+            System.println("TZDATA: No cached data found - returning fresh TimezoneInfo");
         }
 
         return info;
