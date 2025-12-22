@@ -54,61 +54,134 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
      * Load city settings from properties and storage
      */
     function loadSettings() as Void {
+        System.println("========================================");
+        System.println("VIEW: loadSettings() called");
+        System.println("========================================");
+        
         try {
             // Load City 1
+            System.println("VIEW: Loading City 1...");
             var zone1Id = Properties.getValue("City1Zone");
             var label1 = Properties.getValue("City1Label");
+            System.println("VIEW: City1Zone = " + zone1Id);
+            System.println("VIEW: City1Label = " + label1);
+            
             if (zone1Id != null && zone1Id instanceof Number) {
                 var zoneStr = getTimezoneString(zone1Id as Number);
+                System.println("VIEW: City1 timezone string = " + zoneStr);
                 var lbl = (label1 != null && label1 instanceof String) ? label1 as String : "LN";
                 city1Info = TimezoneDataManager.loadTimezoneInfo(1, zoneStr, lbl);
+                System.println("VIEW: City1 loaded successfully");
+                if (city1Info != null) {
+                    System.println("VIEW: City1Info - offset=" + city1Info.offset + ", dst=" + city1Info.dst + ", lastUpdate=" + city1Info.lastUpdate);
+                }
+            } else {
+                System.println("VIEW: ERROR - City1Zone is null or wrong type!");
             }
 
             // Load City 2
+            System.println("VIEW: Loading City 2...");
             var zone2Id = Properties.getValue("City2Zone");
             var label2 = Properties.getValue("City2Label");
+            System.println("VIEW: City2Zone = " + zone2Id);
+            System.println("VIEW: City2Label = " + label2);
+            
             if (zone2Id != null && zone2Id instanceof Number) {
                 var zoneStr = getTimezoneString(zone2Id as Number);
+                System.println("VIEW: City2 timezone string = " + zoneStr);
                 var lbl = (label2 != null && label2 instanceof String) ? label2 as String : "HK";
                 city2Info = TimezoneDataManager.loadTimezoneInfo(2, zoneStr, lbl);
+                System.println("VIEW: City2 loaded successfully");
+                if (city2Info != null) {
+                    System.println("VIEW: City2Info - offset=" + city2Info.offset + ", dst=" + city2Info.dst + ", lastUpdate=" + city2Info.lastUpdate);
+                }
+            } else {
+                System.println("VIEW: ERROR - City2Zone is null or wrong type!");
             }
 
             // Load City 3
+            System.println("VIEW: Loading City 3...");
             var zone3Id = Properties.getValue("City3Zone");
             var label3 = Properties.getValue("City3Label");
+            System.println("VIEW: City3Zone = " + zone3Id);
+            System.println("VIEW: City3Label = " + label3);
+            
             if (zone3Id != null && zone3Id instanceof Number) {
                 var zoneStr = getTimezoneString(zone3Id as Number);
+                System.println("VIEW: City3 timezone string = " + zoneStr);
                 var lbl = (label3 != null && label3 instanceof String) ? label3 as String : "NY";
                 city3Info = TimezoneDataManager.loadTimezoneInfo(3, zoneStr, lbl);
+                System.println("VIEW: City3 loaded successfully");
+                if (city3Info != null) {
+                    System.println("VIEW: City3Info - offset=" + city3Info.offset + ", dst=" + city3Info.dst + ", lastUpdate=" + city3Info.lastUpdate);
+                }
+            } else {
+                System.println("VIEW: ERROR - City3Zone is null or wrong type!");
             }
 
             // Load City 4
+            System.println("VIEW: Loading City 4...");
             var zone4Id = Properties.getValue("City4Zone");
             var label4 = Properties.getValue("City4Label");
+            System.println("VIEW: City4Zone = " + zone4Id);
+            System.println("VIEW: City4Label = " + label4);
+            
             if (zone4Id != null && zone4Id instanceof Number) {
                 var zoneStr = getTimezoneString(zone4Id as Number);
+                System.println("VIEW: City4 timezone string = " + zoneStr);
                 var lbl = (label4 != null && label4 instanceof String) ? label4 as String : "SF";
                 city4Info = TimezoneDataManager.loadTimezoneInfo(4, zoneStr, lbl);
+                System.println("VIEW: City4 loaded successfully");
+                if (city4Info != null) {
+                    System.println("VIEW: City4Info - offset=" + city4Info.offset + ", dst=" + city4Info.dst + ", lastUpdate=" + city4Info.lastUpdate);
+                }
+            } else {
+                System.println("VIEW: ERROR - City4Zone is null or wrong type!");
             }
 
             // Request background update if any timezone needs refresh
+            System.println("VIEW: Checking if background update needed...");
             requestBackgroundUpdateIfNeeded();
+            System.println("VIEW: loadSettings() completed successfully");
+            System.println("========================================");
         } catch (e) {
-            // Use defaults if loading fails
+            System.println("VIEW: CRITICAL ERROR in loadSettings()!");
+            System.println("VIEW: Error message: " + e.getErrorMessage());
+            System.println("VIEW: Using default fallbacks");
+            System.println("========================================");
         }
     }
 
     /**
      * Request background update if timezone data is stale
-     * Note: This only checks staleness. The actual background registration
-     * is handled by the app's onSettingsChanged() to avoid duplicate calls.
      */
     function requestBackgroundUpdateIfNeeded() as Void {
-        // This method is kept for future use but doesn't trigger background updates
-        // to prevent conflicts with app-level background service management.
-        // Background updates are triggered by:
-        // 1. App.onSettingsChanged() when settings change
-        // 2. checkAndApplyPrediction() when predictions are applied during rendering
+        // Check if any city data is stale and needs refresh
+        var needsUpdate = false;
+        
+        if (city1Info != null && city1Info.isStale()) {
+            System.println("VIEW: City1 data is stale, needs update");
+            needsUpdate = true;
+        }
+        if (city2Info != null && city2Info.isStale()) {
+            System.println("VIEW: City2 data is stale, needs update");
+            needsUpdate = true;
+        }
+        if (city3Info != null && city3Info.isStale()) {
+            System.println("VIEW: City3 data is stale, needs update");
+            needsUpdate = true;
+        }
+        if (city4Info != null && city4Info.isStale()) {
+            System.println("VIEW: City4 data is stale, needs update");
+            needsUpdate = true;
+        }
+        
+        if (needsUpdate) {
+            System.println("VIEW: Registering background temporal event for API fetch...");
+            Background.registerForTemporalEvent(new Time.Duration(300)); // 5 minutes minimum
+        } else {
+            System.println("VIEW: All timezone data is fresh, no update needed");
+        }
     }
 
     /**
@@ -301,7 +374,7 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
             TimezoneDataManager.saveTimezoneInfo(cityNum, info);
 
             // Request background update to get exact data
-            Background.registerForTemporalEvent(new Time.Duration(5));
+            Background.registerForTemporalEvent(new Time.Duration(300)); // 5 minutes minimum
         }
     }
 

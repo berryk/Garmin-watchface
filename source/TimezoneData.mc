@@ -15,6 +15,7 @@ import Toybox.Time;
  * @param zoneId Numeric timezone ID (0-20)
  * @return Timezone string for WorldTimeAPI
  */
+(:background)
 function getTimezoneString(zoneId as Number) as String {
     switch (zoneId) {
         case 0: return "Europe/London";
@@ -45,6 +46,7 @@ function getTimezoneString(zoneId as Number) as String {
 /**
  * Data structure for a single timezone
  */
+(:background)
 class TimezoneInfo {
     public var id as String;              // API timezone ID (e.g., "Europe/London")
     public var offset as Number;          // Total offset from UTC in seconds
@@ -150,6 +152,7 @@ class TimezoneInfo {
 /**
  * Manager class for all timezone data
  */
+(:background)
 class TimezoneDataManager {
     /**
      * Save timezone info to persistent storage

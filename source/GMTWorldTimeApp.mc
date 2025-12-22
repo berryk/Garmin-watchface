@@ -45,14 +45,25 @@ class GMTWorldTimeApp extends Application.AppBase {
      * Called when settings are changed in Garmin Connect
      */
     function onSettingsChanged() as Void {
+        System.println("****************************************");
+        System.println("APP: onSettingsChanged() called");
+        System.println("****************************************");
+        
         if (_view != null) {
+            System.println("APP: Reloading view settings...");
             _view.loadSettings();
+        } else {
+            System.println("APP: WARNING - View is null!");
         }
 
         // Trigger background update to fetch new timezone data
-        Background.registerForTemporalEvent(new Time.Duration(5));
+        System.println("APP: Registering background temporal event (5 minutes)...");
+        Background.registerForTemporalEvent(new Time.Duration(300)); // 5 minutes minimum
 
+        System.println("APP: Requesting UI update...");
         WatchUi.requestUpdate();
+        System.println("APP: onSettingsChanged() completed");
+        System.println("****************************************");
     }
 
     /**
@@ -60,12 +71,24 @@ class GMTWorldTimeApp extends Application.AppBase {
      * @param data Background data
      */
     function onBackgroundData(data as Application.PersistableType) as Void {
+        System.println("****************************************");
+        System.println("APP: onBackgroundData() called");
+        System.println("APP: Data received: " + data);
+        System.println("****************************************");
+        
         // Background service has updated timezone data
         // Reload settings to get fresh data
         if (_view != null) {
+            System.println("APP: Reloading view with new background data...");
             _view.loadSettings();
+        } else {
+            System.println("APP: WARNING - View is null!");
         }
+        
+        System.println("APP: Requesting UI update...");
         WatchUi.requestUpdate();
+        System.println("APP: onBackgroundData() completed");
+        System.println("****************************************");
     }
 
     /**
