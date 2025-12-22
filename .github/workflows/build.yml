@@ -205,7 +205,7 @@ jobs:
         run: |
           mkdir -p bin
 
-          # Run export command inside Docker container
+          # Run export using the build script approach
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder:sha-${SHORT_SHA}"
 
@@ -213,7 +213,20 @@ jobs:
             -v "$(pwd):/workspace" \
             -w /workspace \
             "$IMAGE_TAG" \
-            bash -c "monkeyc -e -o bin/GMTWorldTime.iq -y /root/.Garmin/developer_key -f monkey.jungle -w"
+            bash -c "
+              # Setup keys (same as build-in-docker.sh)
+              if [ -f '/root/.garmin-keys/developer_key.der' ]; then
+                cp /root/.garmin-keys/developer_key.der developer_key.der
+                echo 'Using pre-generated developer key'
+              else
+                openssl genrsa -out developer_key.pem 4096
+                openssl pkcs8 -topk8 -inform PEM -outform DER -in developer_key.pem -out developer_key.der -nocrypt
+                echo 'Generated new developer key'
+              fi
+
+              # Export store package
+              monkeyc -e -o bin/GMTWorldTime.iq -y developer_key.der -f monkey.jungle -w
+            "
 
           # Verify export
           if [ -f "bin/GMTWorldTime.iq" ]; then
