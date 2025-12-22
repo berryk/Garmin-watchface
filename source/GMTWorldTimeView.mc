@@ -100,19 +100,15 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
 
     /**
      * Request background update if timezone data is stale
+     * Note: This only checks staleness. The actual background registration
+     * is handled by the app's onSettingsChanged() to avoid duplicate calls.
      */
     function requestBackgroundUpdateIfNeeded() as Void {
-        var needsUpdate = false;
-
-        if (city1Info != null && city1Info.isStale()) { needsUpdate = true; }
-        if (city2Info != null && city2Info.isStale()) { needsUpdate = true; }
-        if (city3Info != null && city3Info.isStale()) { needsUpdate = true; }
-        if (city4Info != null && city4Info.isStale()) { needsUpdate = true; }
-
-        if (needsUpdate) {
-            // Trigger background service to fetch fresh data
-            Background.registerForTemporalEvent(new Time.Duration(5));
-        }
+        // This method is kept for future use but doesn't trigger background updates
+        // to prevent conflicts with app-level background service management.
+        // Background updates are triggered by:
+        // 1. App.onSettingsChanged() when settings change
+        // 2. checkAndApplyPrediction() when predictions are applied during rendering
     }
 
     /**
