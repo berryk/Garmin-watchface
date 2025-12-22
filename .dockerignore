@@ -1,0 +1,41 @@
+# Git
+.git
+.github
+.gitignore
+
+# Build artifacts
+bin/
+screenshots/
+
+# Developer keys (never include in Docker images)
+*.pem
+*.der
+*.p12
+*.keystore
+developer_key*
+
+# IDE files
+.vscode/
+*.code-workspace
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# Device files (will be downloaded from release)
+connectiq-devices.zip
+
+# Test files
+test/
+preview/
+
+# Build scripts (not needed in container)
+*.bat
+*.ps1
