@@ -189,36 +189,38 @@ class TimezoneDataManager {
         var info = new TimezoneInfo(zoneId, displayLabel);
 
         if (data != null && data instanceof Dictionary) {
-            // Restore from storage
-            var id = data.get("id");
-            if (id != null && id instanceof String) {
-                info.id = id;
-            }
+            // Check if cached timezone matches requested timezone
+            var cachedId = data.get("id");
 
-            var offset = data.get("offset");
-            if (offset != null && offset instanceof Number) {
-                info.offset = offset;
-            }
+            // Only use cached data if timezone hasn't changed
+            if (cachedId != null && cachedId instanceof String && cachedId.equals(zoneId)) {
+                // Same timezone, restore cached data
+                var offset = data.get("offset");
+                if (offset != null && offset instanceof Number) {
+                    info.offset = offset;
+                }
 
-            var dst = data.get("dst");
-            if (dst != null && dst instanceof Boolean) {
-                info.dst = dst;
-            }
+                var dst = data.get("dst");
+                if (dst != null && dst instanceof Boolean) {
+                    info.dst = dst;
+                }
 
-            var nextChange = data.get("nextChange");
-            if (nextChange != null && nextChange instanceof Long) {
-                info.nextChange = nextChange;
-            }
+                var nextChange = data.get("nextChange");
+                if (nextChange != null && nextChange instanceof Long) {
+                    info.nextChange = nextChange;
+                }
 
-            var label = data.get("label");
-            if (label != null && label instanceof String) {
-                info.label = label;
-            }
+                var label = data.get("label");
+                if (label != null && label instanceof String) {
+                    info.label = label;
+                }
 
-            var lastUpdate = data.get("lastUpdate");
-            if (lastUpdate != null && lastUpdate instanceof Long) {
-                info.lastUpdate = lastUpdate;
+                var lastUpdate = data.get("lastUpdate");
+                if (lastUpdate != null && lastUpdate instanceof Long) {
+                    info.lastUpdate = lastUpdate;
+                }
             }
+            // If timezone changed, keep fresh TimezoneInfo (with lastUpdate=0, marking it stale)
         }
 
         return info;
