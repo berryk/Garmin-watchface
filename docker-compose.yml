@@ -1,28 +1,12 @@
 version: '3.8'
 
 services:
-  garmin-build:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: garmin-connectiq-builder:latest
-    container_name: garmin-watchface-builder
+  builder:
+    build: .
+    image: garmin-watchface-builder
     volumes:
-      # Mount the project directory
       - .:/workspace
-      # Persist SDK downloads
-      - connectiq-sdk:/opt/connectiq-sdk
-      # Persist developer keys
-      - ./developer_key.pem:/workspace/developer_key.pem
-      - ./developer_key.der:/workspace/developer_key.der
-    environment:
-      - DISPLAY=:99
-      - CONNECTIQ_SDK_PATH=/opt/connectiq-sdk
     working_dir: /workspace
-    # Keep container running for interactive use
+    command: /bin/bash
     stdin_open: true
     tty: true
-
-volumes:
-  connectiq-sdk:
-    driver: local

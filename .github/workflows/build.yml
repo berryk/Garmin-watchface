@@ -17,69 +17,16 @@ permissions:
   id-token: write
 
 jobs:
-  # Build Docker image once and push to GHCR
-  build-docker-image:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder
-          tags: |
-            type=sha
-            type=ref,event=branch
-            type=ref,event=pr
-            type=raw,value=latest,enable={{is_default_branch}}
-          flavor: |
-            latest=false
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            GARMIN_EMAIL=${{ secrets.GARMIN_EMAIL }}
-            GARMIN_PASSWORD=${{ secrets.GARMIN_PASSWORD }}
-
-  # Build watch faces for all devices using the shared Docker image
   build:
-    needs: build-docker-image
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: read
-
+    runs-on: ubuntu-20.04
+    
     strategy:
       matrix:
-        device:
+        device: 
           - fenix7
           - fenix5
           - venu
           - venu2
-          - venu2s
           - venu3
           - venu441mm
           - venu445mm
@@ -92,41 +39,108 @@ jobs:
           - vivoactive4
           - epix2
       fail-fast: false  # Continue building other devices if one fails
-
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          distribution: 'temurin'
+          java-version: '17'
 
-      - name: Pull Docker image
+      - name: Cache Connect IQ SDK
+        id: cache-sdk
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.Garmin/ConnectIQ
+          key: connectiq-sdk-7.3.1-${{ runner.os }}
+
+      - name: Download and Setup Connect IQ SDK
         run: |
-          # Use short SHA (7 chars) to match metadata action format
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder:sha-${SHORT_SHA}"
-          echo "Pulling image: $IMAGE_TAG"
-          docker pull "$IMAGE_TAG"
+          # Create directories
+          mkdir -p ~/.Garmin/ConnectIQ/Sdks/sdk
+          mkdir -p ~/.Garmin/ConnectIQ/Devices
+          
+          # Download SDK bundle from our GitHub release (tar.gz for Linux compatibility)
+          SDK_URL="https://github.com/berryk/Garmin-watchface/releases/download/sdk-v8.4.0-linux/connectiq-sdk-linux-bundle.tar.gz"
+          
+          echo "Downloading Connect IQ SDK bundle..."
+          wget -q "$SDK_URL" -O /tmp/sdk.tar.gz
+          
+          echo "Extracting SDK..."
+          tar -xzf /tmp/sdk.tar.gz -C ~/.Garmin/ConnectIQ/Sdks/sdk
+          rm /tmp/sdk.tar.gz
+          
+          # Download device files from release
+          DEVICES_URL="https://github.com/berryk/Garmin-watchface/releases/download/devices-v1.0.0/connectiq-devices.zip"
+          
+          echo "Downloading Connect IQ device files..."
+          wget -q "$DEVICES_URL" -O /tmp/devices.zip
+          
+          echo "Extracting device files to ~/.Garmin/ConnectIQ/Devices/..."
+          unzip -q /tmp/devices.zip -d /tmp/devices
+          cp -r /tmp/devices/* ~/.Garmin/ConnectIQ/Devices/
+          rm -rf /tmp/devices.zip /tmp/devices
+          
+          # Set SDK path
+          echo "CONNECTIQ_SDK=$HOME/.Garmin/ConnectIQ/Sdks/sdk" >> $GITHUB_ENV
+          
+          # Make scripts executable
+          chmod +x ~/.Garmin/ConnectIQ/Sdks/sdk/bin/* 2>/dev/null || true
+          
+          echo "SDK installed to: $HOME/.Garmin/ConnectIQ/Sdks/sdk"
+          ls -la ~/.Garmin/ConnectIQ/Sdks/sdk/bin/ | head -20
+          echo "Device count: $(ls ~/.Garmin/ConnectIQ/Devices/ | wc -l)"
+          echo "Sample devices: $(ls ~/.Garmin/ConnectIQ/Devices/ | head -10)"
 
-      - name: Build and Screenshot for ${{ matrix.device }}
+      - name: Generate Developer Key
         run: |
-          # Create output directories
-          mkdir -p bin screenshots
+          # Generate a developer key for building (CI-only, not for distribution)
+          openssl genrsa -out developer_key.pem 4096
+          # Convert to DER format
+          openssl pkcs8 -topk8 -inform PEM -outform DER -in developer_key.pem -out developer_key.der -nocrypt
+          echo "Developer key generated"
 
-          # Run build inside Docker container using the shared image from GHCR
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder:sha-${SHORT_SHA}"
-          docker run --rm \
-            -v "$(pwd):/workspace" \
-            -e DEVICE="${{ matrix.device }}" \
-            "$IMAGE_TAG" \
-            /workspace/scripts/build-in-docker.sh
-
-          # Verify build output
+      - name: Build for ${{ matrix.device }}
+        run: |
+          mkdir -p bin
+          
+          # Use the SDK we downloaded
+          SDK_PATH="$HOME/.Garmin/ConnectIQ/Sdks/sdk"
+          
+          echo "Building for device: ${{ matrix.device }}"
+          echo "SDK Path: $SDK_PATH"
+          
+          # Find monkeybrains.jar
+          MONKEYBRAINS=$(find $SDK_PATH -name "monkeybrains.jar" | head -1)
+          
+          if [ -z "$MONKEYBRAINS" ]; then
+            echo "ERROR: monkeybrains.jar not found in SDK"
+            ls -la $SDK_PATH/
+            exit 1
+          fi
+          
+          echo "Using monkeybrains.jar: $MONKEYBRAINS"
+          
+          # Build the watchface
+          java -jar "$MONKEYBRAINS" \
+            -o "bin/GMTWorldTime-${{ matrix.device }}.prg" \
+            -f monkey.jungle \
+            -d ${{ matrix.device }} \
+            -y developer_key.der \
+            -w 2>&1 || {
+              echo "Build failed, showing detailed error..."
+              java -jar "$MONKEYBRAINS" \
+                -o "bin/GMTWorldTime-${{ matrix.device }}.prg" \
+                -f monkey.jungle \
+                -d ${{ matrix.device }} \
+                -y developer_key.der
+            }
+          
+          # Check if build succeeded
           if [ -f "bin/GMTWorldTime-${{ matrix.device }}.prg" ]; then
             echo "✅ Build successful for ${{ matrix.device }}"
             ls -la bin/
@@ -135,27 +149,87 @@ jobs:
             exit 1
           fi
 
-          # Check screenshot
+      - name: Install Screenshot Dependencies
+        run: |
+          sudo apt-get update
+          # Install all required libraries for the simulator
+          sudo apt-get install -y \
+            xvfb \
+            x11-utils \
+            scrot \
+            imagemagick \
+            libgtk-3-0 \
+            libsecret-1-0 \
+            libglib2.0-0 \
+            libgdk-pixbuf2.0-0 \
+            libcairo2 \
+            libpango-1.0-0 \
+            libjavascriptcoregtk-4.0-18 \
+            gir1.2-webkit2-4.0 || true
+          
+          # Try to install webkit2gtk - the simulator needs this but it may not be available
+          sudo apt-get install -y libwebkit2gtk-4.1-0 2>/dev/null || \
+          sudo apt-get install -y libwebkit2gtk-4.0-dev 2>/dev/null || \
+          echo "⚠️ Warning: webkit2gtk not available, screenshots will be skipped"
+
+      - name: Take Simulator Screenshot
+        continue-on-error: true  # Don't fail build if simulator can't run (webkit unavailable)
+        run: |
+          mkdir -p screenshots
+          
+          SDK_PATH="$HOME/.Garmin/ConnectIQ/Sdks/sdk"
+          SIMULATOR="$SDK_PATH/bin/simulator"
+          MONKEYBRAINS=$(find $SDK_PATH -name "monkeybrains.jar" | head -1)
+          SHELL_EXE="$SDK_PATH/bin/shell"
+          
+          # Check if simulator exists
+          if [ ! -f "$SIMULATOR" ]; then
+            echo "Simulator not found, skipping screenshot"
+            echo "Available files in bin:"
+            ls -la $SDK_PATH/bin/
+            exit 0
+          fi
+          
+          # Start virtual display
+          echo "Starting Xvfb..."
+          Xvfb :99 -screen 0 1024x768x24 &
+          XVFB_PID=$!
+          export DISPLAY=:99
+          sleep 2
+          
+          # Start simulator
+          echo "Starting simulator..."
+          chmod +x "$SIMULATOR" 2>/dev/null || true
+          "$SIMULATOR" &
+          SIMULATOR_PID=$!
+          sleep 5
+          
+          # Load the watchface
+          echo "Loading watchface..."
+          java -classpath "$MONKEYBRAINS" \
+            com.garmin.monkeybrains.monkeydodeux.MonkeyDoDeux \
+            -f "bin/GMTWorldTime-${{ matrix.device }}.prg" \
+            -d ${{ matrix.device }} \
+            -s "$SHELL_EXE" 2>&1 || echo "MonkeyDo may have failed"
+          
+          sleep 3
+          
+          # Capture screenshot
+          echo "Capturing screenshot..."
+          scrot "screenshots/${{ matrix.device }}.png" 2>/dev/null || {
+            # Try alternative screenshot method
+            import -window root "screenshots/${{ matrix.device }}.png" 2>/dev/null || echo "Screenshot capture failed"
+          }
+          
+          # Cleanup
+          kill $SIMULATOR_PID 2>/dev/null || true
+          kill $XVFB_PID 2>/dev/null || true
+          
           if [ -f "screenshots/${{ matrix.device }}.png" ]; then
             echo "✅ Screenshot captured for ${{ matrix.device }}"
+            ls -la screenshots/
           else
             echo "⚠️ Screenshot not captured for ${{ matrix.device }}"
-          fi
-
-      - name: Add Build Status to Summary
-        if: always()
-        run: |
-          echo "### ${{ matrix.device }}" >> $GITHUB_STEP_SUMMARY
-          if [ -f "bin/GMTWorldTime-${{ matrix.device }}.prg" ]; then
-            PRG_SIZE=$(ls -lh "bin/GMTWorldTime-${{ matrix.device }}.prg" | awk '{print $5}')
-            echo "✅ Build successful - $PRG_SIZE" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Build failed" >> $GITHUB_STEP_SUMMARY
-          fi
-          if [ -f "screenshots/${{ matrix.device }}.png" ]; then
-            echo "📸 Screenshot captured" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ No screenshot" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Upload PRG Artifact
@@ -174,93 +248,9 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
-  # Export store package (.iq file)
-  export-store-package:
-    needs: build
-    runs-on: ubuntu-latest
-    if: success()
-    permissions:
-      contents: read
-      packages: read
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Pull Docker image
-        run: |
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder:sha-${SHORT_SHA}"
-          echo "Pulling image: $IMAGE_TAG"
-          docker pull "$IMAGE_TAG"
-
-      - name: Export Store Package
-        run: |
-          mkdir -p bin
-
-          # Run export using the build script approach
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder:sha-${SHORT_SHA}"
-
-          docker run --rm \
-            -v "$(pwd):/workspace" \
-            -w /workspace \
-            "$IMAGE_TAG" \
-            bash -c "
-              # Setup keys (same as build-in-docker.sh)
-              if [ -f '/root/.garmin-keys/developer_key.der' ]; then
-                cp /root/.garmin-keys/developer_key.der developer_key.der
-                echo 'Using pre-generated developer key'
-              else
-                openssl genrsa -out developer_key.pem 4096
-                openssl pkcs8 -topk8 -inform PEM -outform DER -in developer_key.pem -out developer_key.der -nocrypt
-                echo 'Generated new developer key'
-              fi
-
-              # Export store package
-              monkeyc -e -o bin/GMTWorldTime.iq -y developer_key.der -f monkey.jungle -w
-            "
-
-          # Verify export
-          if [ -f "bin/GMTWorldTime.iq" ]; then
-            IQ_SIZE=$(ls -lh "bin/GMTWorldTime.iq" | awk '{print $5}')
-            echo "✅ Store package created: $IQ_SIZE"
-            ls -la bin/GMTWorldTime.iq
-          else
-            echo "❌ Store package creation failed"
-            exit 1
-          fi
-
-      - name: Add Export Status to Summary
-        if: always()
-        run: |
-          echo "### 📦 Store Package Export" >> $GITHUB_STEP_SUMMARY
-          if [ -f "bin/GMTWorldTime.iq" ]; then
-            IQ_SIZE=$(ls -lh "bin/GMTWorldTime.iq" | awk '{print $5}')
-            echo "✅ Export successful - $IQ_SIZE" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Ready for Connect IQ Store submission" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Export failed" >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Upload Store Package
-        uses: actions/upload-artifact@v4
-        with:
-          name: GMTWorldTime-store-package
-          path: bin/GMTWorldTime.iq
-          retention-days: 90
-
   # Combine all builds into a single artifact
   combine-artifacts:
-    needs: [build, export-store-package]
+    needs: build
     runs-on: ubuntu-latest
     if: always()
     
@@ -298,46 +288,17 @@ jobs:
 
       - name: Generate Build Summary
         run: |
-          echo "# 📱 GMT World Time - Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "## Build Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Device | Build Status | Screenshot |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|--------------|------------|" >> $GITHUB_STEP_SUMMARY
-
-          # Create a comprehensive summary
-          DEVICES=(fenix7 fenix5 venu venu2 venu2s venu3 venu441mm venu445mm venux1 venusq2 fr965 fr255 fr245 vivoactive5 vivoactive4 epix2)
-
-          for device in "${DEVICES[@]}"; do
-            # Check for PRG file
-            prg_file="all-builds/GMTWorldTime-${device}.prg"
-            if [ -f "$prg_file" ]; then
-              size=$(ls -lh "$prg_file" | awk '{print $5}')
-              build_status="✅ $size"
-            else
-              build_status="❌ Failed"
+          echo "| Device | PRG File |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          for prg in all-builds/*.prg; do
+            if [ -f "$prg" ]; then
+              name=$(basename "$prg" .prg)
+              size=$(ls -lh "$prg" | awk '{print $5}')
+              echo "| ${name#GMTWorldTime-} | ✅ $size |" >> $GITHUB_STEP_SUMMARY
             fi
-
-            # Check for screenshot
-            screenshot_file="all-screenshots/${device}.png"
-            if [ -f "$screenshot_file" ]; then
-              screenshot_status="📸 Captured"
-            else
-              screenshot_status="⚠️ Missing"
-            fi
-
-            echo "| $device | $build_status | $screenshot_status |" >> $GITHUB_STEP_SUMMARY
           done
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📦 Download Artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "- **Store Package**: \`GMTWorldTime-store-package\` artifact (.iq file for Connect IQ Store)" >> $GITHUB_STEP_SUMMARY
-          echo "- **All Builds**: \`GMTWorldTime-all-devices\` artifact (device-specific .prg files)" >> $GITHUB_STEP_SUMMARY
-          echo "- **All Screenshots**: \`all-screenshots\` artifact" >> $GITHUB_STEP_SUMMARY
-          echo "- **Build Report**: \`build-report\` artifact (HTML with embedded screenshots)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🌐 View Screenshots" >> $GITHUB_STEP_SUMMARY
-          echo "Download the \`build-report\` artifact and open \`index.html\` to view all screenshots in a beautiful gallery, or wait for the GitHub Pages deployment to complete." >> $GITHUB_STEP_SUMMARY
 
   # Generate HTML build report with screenshots
   generate-report:
@@ -490,17 +451,6 @@ jobs:
           path: build-report/
           retention-days: 90
 
-      - name: Add Report Summary
-        run: |
-          echo "# 📊 Build Report Generated" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "A comprehensive HTML build report has been generated with all device screenshots." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📥 View Report" >> $GITHUB_STEP_SUMMARY
-          echo "1. Download the \`build-report\` artifact from this workflow run" >> $GITHUB_STEP_SUMMARY
-          echo "2. Extract and open \`index.html\` in your browser" >> $GITHUB_STEP_SUMMARY
-          echo "3. Or wait for GitHub Pages deployment (main branch only)" >> $GITHUB_STEP_SUMMARY
-
   # Deploy build report to GitHub Pages
   deploy-pages:
     needs: generate-report
@@ -523,49 +473,27 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Add Pages Deployment Summary
-        run: |
-          echo "# 🚀 Screenshots Deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🌐 View Live Build Report" >> $GITHUB_STEP_SUMMARY
-          echo "Your build report with all device screenshots is now live at:" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**${{ steps.deployment.outputs.page_url }}**" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The report includes:" >> $GITHUB_STEP_SUMMARY
-          echo "- 📸 Screenshots for all devices" >> $GITHUB_STEP_SUMMARY
-          echo "- 📊 Build statistics" >> $GITHUB_STEP_SUMMARY
-          echo "- 📦 File sizes for each device" >> $GITHUB_STEP_SUMMARY
-
   # Create a release on tags
   release:
-    needs: [build, export-store-package]
+    needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
-
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download device builds
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: builds/
           pattern: GMTWorldTime-*
           merge-multiple: true
 
-      - name: Download store package
-        uses: actions/download-artifact@v4
-        with:
-          name: GMTWorldTime-store-package
-          path: builds/
-
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            builds/*.prg
-            builds/GMTWorldTime.iq
+          files: builds/*.prg
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
