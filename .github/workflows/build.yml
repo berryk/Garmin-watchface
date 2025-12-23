@@ -210,11 +210,22 @@ jobs:
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder:sha-${SHORT_SHA}"
 
+          # First generate the key, then export the package
           docker run --rm \
             -v "$(pwd):/workspace" \
             -w /workspace \
             "$IMAGE_TAG" \
-            bash -c "monkeyc -e -o bin/GMTWorldTime.iq -y /root/.Garmin/developer_key -f monkey.jungle -w"
+            bash -c "
+              # Generate developer key if it doesn't exist
+              if [ ! -f /workspace/developer_key.der ]; then
+                echo 'Generating developer key...'
+                openssl genrsa -out /workspace/developer_key.pem 4096
+                openssl pkcs8 -topk8 -inform PEM -outform DER -in /workspace/developer_key.pem -out /workspace/developer_key.der -nocrypt
+              fi
+
+              # Export the store package
+              monkeyc -e -o bin/GMTWorldTime.iq -y /workspace/developer_key.der -f monkey.jungle -w
+            "
 
           # Verify export
           if [ -f "bin/GMTWorldTime.iq" ]; then
