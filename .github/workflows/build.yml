@@ -175,11 +175,11 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
-  # Export single multi-device IQ package for store submission
-  export-iq-package:
+  # Export store package (.iq file)
+  export-store-package:
     needs: build
     runs-on: ubuntu-latest
-    if: always()
+    if: success()
     permissions:
       contents: read
       packages: read
@@ -202,29 +202,53 @@ jobs:
           echo "Pulling image: $IMAGE_TAG"
           docker pull "$IMAGE_TAG"
 
-      - name: Export multi-device IQ package
+      - name: Export Store Package
         run: |
           mkdir -p bin
+
+          # Run export command inside Docker container
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder:sha-${SHORT_SHA}"
 
-          # Run the export function directly (not per-device build)
           docker run --rm \
             -v "$(pwd):/workspace" \
+            -w /workspace \
             "$IMAGE_TAG" \
-            bash -c "cd /workspace && source /workspace/scripts/build-in-docker.sh && setup_sdk && generate_key && export_iq_package"
+            bash -c "monkeyc -e -o bin/GMTWorldTime.iq -y /root/.Garmin/developer_key -f monkey.jungle -w"
 
-      - name: Upload IQ Package
+          # Verify export
+          if [ -f "bin/GMTWorldTime.iq" ]; then
+            IQ_SIZE=$(ls -lh "bin/GMTWorldTime.iq" | awk '{print $5}')
+            echo "✅ Store package created: $IQ_SIZE"
+            ls -la bin/GMTWorldTime.iq
+          else
+            echo "❌ Store package creation failed"
+            exit 1
+          fi
+
+      - name: Add Export Status to Summary
+        if: always()
+        run: |
+          echo "### 📦 Store Package Export" >> $GITHUB_STEP_SUMMARY
+          if [ -f "bin/GMTWorldTime.iq" ]; then
+            IQ_SIZE=$(ls -lh "bin/GMTWorldTime.iq" | awk '{print $5}')
+            echo "✅ Export successful - $IQ_SIZE" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Ready for Connect IQ Store submission" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Export failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Store Package
         uses: actions/upload-artifact@v4
         with:
           name: GMTWorldTime-store-package
           path: bin/GMTWorldTime.iq
           retention-days: 90
-          if-no-files-found: warn
 
   # Combine all builds into a single artifact
   combine-artifacts:
-    needs: build
+    needs: [build, export-store-package]
     runs-on: ubuntu-latest
     if: always()
 
@@ -295,8 +319,8 @@ jobs:
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Download Artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "- **All PRG Files** (for testing): \`GMTWorldTime-all-devices\` artifact" >> $GITHUB_STEP_SUMMARY
-          echo "- **Store Package** (multi-device .iq for store): \`GMTWorldTime-store-package\` artifact" >> $GITHUB_STEP_SUMMARY
+          echo "- **Store Package**: \`GMTWorldTime-store-package\` artifact (.iq file for Connect IQ Store)" >> $GITHUB_STEP_SUMMARY
+          echo "- **All Builds**: \`GMTWorldTime-all-devices\` artifact (device-specific .prg files)" >> $GITHUB_STEP_SUMMARY
           echo "- **All Screenshots**: \`all-screenshots\` artifact" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Report**: \`build-report\` artifact (HTML with embedded screenshots)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -506,7 +530,7 @@ jobs:
 
   # Create a release on tags
   release:
-    needs: build
+    needs: [build, export-store-package]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
 
@@ -514,40 +538,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download all PRG artifacts
+      - name: Download device builds
         uses: actions/download-artifact@v4
         with:
           path: builds/
           pattern: GMTWorldTime-*
           merge-multiple: true
 
-      - name: Download IQ package
+      - name: Download store package
         uses: actions/download-artifact@v4
-        continue-on-error: true
         with:
           name: GMTWorldTime-store-package
-          path: iq-package/
+          path: builds/
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             builds/*.prg
-            iq-package/GMTWorldTime.iq
+            builds/GMTWorldTime.iq
           generate_release_notes: true
-          body: |
-            ## 📦 Downloads
-
-            ### For Testing
-            - Download individual `.prg` files to test on your device or simulator
-
-            ### For Store Submission
-            - **`GMTWorldTime.iq`** - Single multi-device package for all 16 supported devices
-            - Ready to upload to the Garmin Connect IQ Store
-
-            See the [Build Report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for screenshots of all devices.
-
-            ## Supported Devices (16)
-            Fenix (2), Venu (8), Forerunner (3), Vivoactive (2), Epix (1)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
