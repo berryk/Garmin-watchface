@@ -146,12 +146,13 @@ build_watchface() {
     fi
 }
 
-# Function to export IQ package for store submission
+# Function to export IQ package for store submission (multi-device package)
 export_iq_package() {
     cd "$WORKSPACE"
     mkdir -p bin
 
-    echo "Exporting IQ package for Connect IQ Store..."
+    echo "Exporting multi-device IQ package for Connect IQ Store..."
+    echo "This package will include all devices listed in manifest.xml"
 
     # Find monkeybrains.jar
     MONKEYBRAINS="$SDK_PATH/bin/monkeybrains.jar"
@@ -163,13 +164,13 @@ export_iq_package() {
 
     # Export IQ package (.iq file for store submission)
     # The -e flag means "export for store" (creates .iq instead of .prg)
-    IQ_OUTPUT_FILE="bin/GMTWorldTime-${DEVICE}.iq"
+    # NO -d flag: builds for ALL devices in manifest.xml
+    IQ_OUTPUT_FILE="bin/GMTWorldTime.iq"
 
     java -jar "$MONKEYBRAINS" \
         -e \
         -o "$IQ_OUTPUT_FILE" \
         -f monkey.jungle \
-        -d "$DEVICE" \
         -y developer_key.der \
         -w 2>&1 || {
             echo -e "${YELLOW}⚠${NC} IQ export failed (non-critical)"
@@ -179,9 +180,10 @@ export_iq_package() {
     # Check if export succeeded
     if [ -f "$IQ_OUTPUT_FILE" ]; then
         SIZE=$(ls -lh "$IQ_OUTPUT_FILE" | awk '{print $5}')
-        echo -e "${GREEN}✓${NC} IQ package exported for $DEVICE ($SIZE)"
+        echo -e "${GREEN}✓${NC} Multi-device IQ package exported: $IQ_OUTPUT_FILE ($SIZE)"
+        echo "Package includes all 16 devices from manifest.xml"
     else
-        echo -e "${YELLOW}⚠${NC} IQ package not created for $DEVICE"
+        echo -e "${YELLOW}⚠${NC} IQ package not created"
     fi
 }
 
@@ -361,9 +363,6 @@ main() {
     generate_key
     build_watchface
 
-    # Export IQ package for store submission
-    export_iq_package
-
     # Only take screenshot if SKIP_SCREENSHOT is not set
     if [ -z "$SKIP_SCREENSHOT" ]; then
         take_screenshot
@@ -379,10 +378,6 @@ main() {
     # Show results
     if [ -f "bin/GMTWorldTime-${DEVICE}.prg" ]; then
         echo "PRG file: bin/GMTWorldTime-${DEVICE}.prg"
-    fi
-
-    if [ -f "bin/GMTWorldTime-${DEVICE}.iq" ]; then
-        echo "IQ package: bin/GMTWorldTime-${DEVICE}.iq"
     fi
 
     if [ -f "screenshots/${DEVICE}.png" ]; then
