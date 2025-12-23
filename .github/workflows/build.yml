@@ -64,9 +64,26 @@ jobs:
             GARMIN_EMAIL=${{ secrets.GARMIN_EMAIL }}
             GARMIN_PASSWORD=${{ secrets.GARMIN_PASSWORD }}
 
+  # Generate device matrix from centralized devices.txt
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      devices: ${{ steps.set-matrix.outputs.devices }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate device matrix from devices.txt
+        id: set-matrix
+        run: |
+          # Read devices.txt, filter out comments and empty lines, convert to JSON array
+          DEVICES=$(grep -v '^#' devices.txt | grep -v '^[[:space:]]*$' | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "devices=$DEVICES" >> $GITHUB_OUTPUT
+          echo "Building for devices: $DEVICES"
+
   # Build watch faces for all devices using the shared Docker image
   build:
-    needs: build-docker-image
+    needs: [build-docker-image, generate-matrix]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -74,23 +91,7 @@ jobs:
 
     strategy:
       matrix:
-        device:
-          - fenix7
-          - fenix5
-          - venu
-          - venu2
-          - venu2s
-          - venu3
-          - venu441mm
-          - venu445mm
-          - venux1
-          - venusq2
-          - fr965
-          - fr255
-          - fr245
-          - vivoactive5
-          - vivoactive4
-          - epix2
+        device: ${{ fromJson(needs.generate-matrix.outputs.devices) }}
       fail-fast: false  # Continue building other devices if one fails
 
     steps:
@@ -165,6 +166,14 @@ jobs:
           path: bin/GMTWorldTime-${{ matrix.device }}.prg
           retention-days: 30
 
+      - name: Upload IQ Package Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GMTWorldTime-${{ matrix.device }}-iq
+          path: bin/GMTWorldTime-${{ matrix.device }}.iq
+          retention-days: 90
+          if-no-files-found: ignore
+
       - name: Upload Screenshot
         uses: actions/upload-artifact@v4
         if: always()
@@ -179,13 +188,21 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: always()
-    
+
     steps:
       - name: Download all PRG artifacts
         uses: actions/download-artifact@v4
         with:
           path: all-builds/
           pattern: GMTWorldTime-*
+          merge-multiple: true
+
+      - name: Download all IQ packages
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          path: all-iq-packages/
+          pattern: GMTWorldTime-*-iq
           merge-multiple: true
 
       - name: Download all screenshots
@@ -202,6 +219,15 @@ jobs:
           name: GMTWorldTime-all-devices
           path: all-builds/
           retention-days: 90
+
+      - name: Create combined IQ packages artifact
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: GMTWorldTime-all-iq-packages
+          path: all-iq-packages/
+          retention-days: 90
+          if-no-files-found: ignore
 
       - name: Create combined screenshots artifact
         uses: actions/upload-artifact@v4
@@ -247,12 +273,16 @@ jobs:
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Download Artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "- **All Builds**: \`GMTWorldTime-all-devices\` artifact" >> $GITHUB_STEP_SUMMARY
+          echo "- **All PRG Files** (for testing): \`GMTWorldTime-all-devices\` artifact" >> $GITHUB_STEP_SUMMARY
+          echo "- **All IQ Packages** (for store submission): \`GMTWorldTime-all-iq-packages\` artifact" >> $GITHUB_STEP_SUMMARY
           echo "- **All Screenshots**: \`all-screenshots\` artifact" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Report**: \`build-report\` artifact (HTML with embedded screenshots)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🌐 View Screenshots" >> $GITHUB_STEP_SUMMARY
           echo "Download the \`build-report\` artifact and open \`index.html\` to view all screenshots in a beautiful gallery, or wait for the GitHub Pages deployment to complete." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📤 Store Submission" >> $GITHUB_STEP_SUMMARY
+          echo "The \`.iq\` files in the \`GMTWorldTime-all-iq-packages\` artifact are ready for submission to the Garmin Connect IQ Store." >> $GITHUB_STEP_SUMMARY
 
   # Generate HTML build report with screenshots
   generate-report:
@@ -457,22 +487,42 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download all artifacts
+      - name: Download all PRG artifacts
         uses: actions/download-artifact@v4
         with:
           path: builds/
           pattern: GMTWorldTime-*
           merge-multiple: true
 
+      - name: Download all IQ packages
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          path: iq-packages/
+          pattern: GMTWorldTime-*-iq
+          merge-multiple: true
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: builds/*.prg
+          files: |
+            builds/*.prg
+            iq-packages/*.iq
           generate_release_notes: true
+          body: |
+            ## 📦 Downloads
+
+            ### For Testing
+            - Download `.prg` files to test on your device or simulator
+
+            ### For Store Submission
+            - Download `.iq` files to submit to the Garmin Connect IQ Store
+
+            See the [Build Report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for screenshots of all devices.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

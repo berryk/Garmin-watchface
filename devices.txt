@@ -1,0 +1,30 @@
+# Supported Devices for GMT World Time Watchface
+# This is the single source of truth for all devices we build and test
+# Format: One device ID per line (matching Garmin Connect IQ device IDs)
+# Lines starting with # are comments
+
+# Fenix Series
+fenix7
+fenix5
+
+# Venu Series
+venu
+venu2
+venu2s
+venu3
+venu441mm
+venu445mm
+venux1
+venusq2
+
+# Forerunner Series
+fr965
+fr255
+fr245
+
+# Vivoactive Series
+vivoactive5
+vivoactive4
+
+# Epix Series
+epix2
