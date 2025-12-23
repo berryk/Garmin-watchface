@@ -4,23 +4,19 @@
     Default values for configurable settings
 -->
 <properties>
-    <!-- City 1 (Top Left) - Default: London -->
+    <!-- City 1 (Top Left) - Default: London (ID 0) -->
+    <property id="City1Zone" type="number">0</property>
     <property id="City1Label" type="string">LN</property>
-    <property id="City1Offset" type="number">0</property>
-    <property id="City1DST" type="boolean">false</property>
 
-    <!-- City 2 (Top Right) - Default: Hong Kong -->
+    <!-- City 2 (Top Right) - Default: Hong Kong (ID 13) -->
+    <property id="City2Zone" type="number">13</property>
     <property id="City2Label" type="string">HK</property>
-    <property id="City2Offset" type="number">8</property>
-    <property id="City2DST" type="boolean">false</property>
 
-    <!-- City 3 (Bottom Left) - Default: New York -->
+    <!-- City 3 (Bottom Left) - Default: New York (ID 4) -->
+    <property id="City3Zone" type="number">4</property>
     <property id="City3Label" type="string">NY</property>
-    <property id="City3Offset" type="number">-5</property>
-    <property id="City3DST" type="boolean">false</property>
 
-    <!-- City 4 (Bottom Right) - Default: San Francisco -->
+    <!-- City 4 (Bottom Right) - Default: Los Angeles (ID 7) -->
+    <property id="City4Zone" type="number">7</property>
     <property id="City4Label" type="string">SF</property>
-    <property id="City4Offset" type="number">-8</property>
-    <property id="City4DST" type="boolean">false</property>
 </properties>

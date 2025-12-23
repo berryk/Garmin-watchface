@@ -174,9 +174,93 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
+  # Export store package (.iq file)
+  export-store-package:
+    needs: build
+    runs-on: ubuntu-latest
+    if: success()
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull Docker image
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder:sha-${SHORT_SHA}"
+          echo "Pulling image: $IMAGE_TAG"
+          docker pull "$IMAGE_TAG"
+
+      - name: Export Store Package
+        run: |
+          mkdir -p bin
+
+          # Run export using the build script approach
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder:sha-${SHORT_SHA}"
+
+          docker run --rm \
+            -v "$(pwd):/workspace" \
+            -w /workspace \
+            "$IMAGE_TAG" \
+            bash -c "
+              # Setup keys (same as build-in-docker.sh)
+              if [ -f '/root/.garmin-keys/developer_key.der' ]; then
+                cp /root/.garmin-keys/developer_key.der developer_key.der
+                echo 'Using pre-generated developer key'
+              else
+                openssl genrsa -out developer_key.pem 4096
+                openssl pkcs8 -topk8 -inform PEM -outform DER -in developer_key.pem -out developer_key.der -nocrypt
+                echo 'Generated new developer key'
+              fi
+
+              # Export store package
+              monkeyc -e -o bin/GMTWorldTime.iq -y developer_key.der -f monkey.jungle -w
+            "
+
+          # Verify export
+          if [ -f "bin/GMTWorldTime.iq" ]; then
+            IQ_SIZE=$(ls -lh "bin/GMTWorldTime.iq" | awk '{print $5}')
+            echo "✅ Store package created: $IQ_SIZE"
+            ls -la bin/GMTWorldTime.iq
+          else
+            echo "❌ Store package creation failed"
+            exit 1
+          fi
+
+      - name: Add Export Status to Summary
+        if: always()
+        run: |
+          echo "### 📦 Store Package Export" >> $GITHUB_STEP_SUMMARY
+          if [ -f "bin/GMTWorldTime.iq" ]; then
+            IQ_SIZE=$(ls -lh "bin/GMTWorldTime.iq" | awk '{print $5}')
+            echo "✅ Export successful - $IQ_SIZE" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Ready for Connect IQ Store submission" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Export failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Store Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: GMTWorldTime-store-package
+          path: bin/GMTWorldTime.iq
+          retention-days: 90
+
   # Combine all builds into a single artifact
   combine-artifacts:
-    needs: build
+    needs: [build, export-store-package]
     runs-on: ubuntu-latest
     if: always()
     
@@ -247,7 +331,8 @@ jobs:
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Download Artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "- **All Builds**: \`GMTWorldTime-all-devices\` artifact" >> $GITHUB_STEP_SUMMARY
+          echo "- **Store Package**: \`GMTWorldTime-store-package\` artifact (.iq file for Connect IQ Store)" >> $GITHUB_STEP_SUMMARY
+          echo "- **All Builds**: \`GMTWorldTime-all-devices\` artifact (device-specific .prg files)" >> $GITHUB_STEP_SUMMARY
           echo "- **All Screenshots**: \`all-screenshots\` artifact" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Report**: \`build-report\` artifact (HTML with embedded screenshots)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -454,25 +539,33 @@ jobs:
 
   # Create a release on tags
   release:
-    needs: build
+    needs: [build, export-store-package]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download all artifacts
+      - name: Download device builds
         uses: actions/download-artifact@v4
         with:
           path: builds/
           pattern: GMTWorldTime-*
           merge-multiple: true
 
+      - name: Download store package
+        uses: actions/download-artifact@v4
+        with:
+          name: GMTWorldTime-store-package
+          path: builds/
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: builds/*.prg
+          files: |
+            builds/*.prg
+            builds/GMTWorldTime.iq
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
