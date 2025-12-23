@@ -154,11 +154,13 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
 
     /**
      * Request background update if timezone data is stale
+     * NOTE: Does not trigger background service - that's handled by App.onSettingsChanged()
+     * This just logs which cities need updates.
      */
     function requestBackgroundUpdateIfNeeded() as Void {
         // Check if any city data is stale and needs refresh
         var needsUpdate = false;
-        
+
         if (city1Info != null && city1Info.isStale()) {
             System.println("VIEW: City1 data is stale, needs update");
             needsUpdate = true;
@@ -175,10 +177,9 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
             System.println("VIEW: City4 data is stale, needs update");
             needsUpdate = true;
         }
-        
+
         if (needsUpdate) {
-            System.println("VIEW: Registering background temporal event for API fetch...");
-            Background.registerForTemporalEvent(new Time.Duration(300)); // 5 minutes minimum
+            System.println("VIEW: Some cities need updates (will be handled by background service)");
         } else {
             System.println("VIEW: All timezone data is fresh, no update needed");
         }
@@ -367,14 +368,16 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
 
         // Check if we've passed the predicted transition time
         if (info.nextChange > 0 && now > info.nextChange) {
+            System.println("VIEW: City" + cityNum + " has passed DST transition time - applying prediction");
+
             // Apply heuristic prediction (flip DST, adjust offset by ±1 hour)
             info.applyPrediction();
 
             // Save updated data
             TimezoneDataManager.saveTimezoneInfo(cityNum, info);
 
-            // Request background update to get exact data
-            Background.registerForTemporalEvent(new Time.Duration(300)); // 5 minutes minimum
+            System.println("VIEW: Prediction applied - new offset=" + info.offset + ", dst=" + info.dst);
+            System.println("VIEW: Background service should fetch exact data soon");
         }
     }
 

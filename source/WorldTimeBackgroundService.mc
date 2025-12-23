@@ -33,6 +33,11 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
      * @param info Temporal event information
      */
     function onTemporalEvent() as Void {
+        System.println("+++++++++++++++++++++++++++++++++++++++");
+        System.println("BACKGROUND: onTemporalEvent() called");
+        System.println("BACKGROUND: Starting timezone data fetch chain...");
+        System.println("+++++++++++++++++++++++++++++++++++++++");
+
         // Start fetching from City 1
         fetchTimezoneData(1);
     }
@@ -42,8 +47,11 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
      * @param cityNum City number (1-4)
      */
     function fetchTimezoneData(cityNum as Number) as Void {
+        System.println("BACKGROUND: fetchTimezoneData(" + cityNum + ")");
+
         if (cityNum > 4) {
             // All cities processed, exit
+            System.println("BACKGROUND: All cities processed, exiting");
             Background.exit(null);
             return;
         }
@@ -55,14 +63,18 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
         var zoneId = Properties.getValue(zoneKey);
         var label = Properties.getValue(labelKey);
 
+        System.println("BACKGROUND: City" + cityNum + " zoneId=" + zoneId + ", label=" + label);
+
         if (zoneId == null || !(zoneId instanceof Number)) {
             // No timezone configured, skip to next
+            System.println("BACKGROUND: City" + cityNum + " has no timezone configured, skipping");
             fetchTimezoneData(cityNum + 1);
             return;
         }
 
         // Convert numeric ID to timezone string
         var zoneStr = getTimezoneString(zoneId as Number);
+        System.println("BACKGROUND: City" + cityNum + " timezone string = " + zoneStr);
 
         if (label == null || !(label instanceof String)) {
             label = "";
@@ -73,12 +85,14 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
 
         if (!info.isStale()) {
             // Data is still fresh, skip to next
+            System.println("BACKGROUND: City" + cityNum + " data is fresh, skipping");
             fetchTimezoneData(cityNum + 1);
             return;
         }
 
         // Build API URL
         var url = "https://worldtimeapi.org/api/timezone/" + zoneStr;
+        System.println("BACKGROUND: Fetching URL: " + url);
 
         // Store current city number for callback
         currentCityNum = cityNum;
@@ -89,6 +103,7 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
             :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
         };
 
+        System.println("BACKGROUND: Making HTTP request...");
         Communications.makeWebRequest(
             url,
             null,
@@ -105,13 +120,22 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
     function onReceiveTimezoneData(responseCode as Number, data as Dictionary?) as Void {
         var cityNum = currentCityNum;
 
+        System.println("BACKGROUND: Received response for City" + cityNum);
+        System.println("BACKGROUND: Response code = " + responseCode);
+
         if (responseCode == 200 && data != null) {
+            System.println("BACKGROUND: Success! Parsing timezone data...");
             // Parse response
             parseAndSaveTimezoneData(cityNum, data);
+        } else {
+            System.println("BACKGROUND: Failed - keeping old data");
+            System.println("BACKGROUND: Response code: " + responseCode);
+            System.println("BACKGROUND: Data null? " + (data == null));
         }
 
         // Continue to next city regardless of success/failure
         // (keeping old data if fetch failed)
+        System.println("BACKGROUND: Continuing to next city...");
         fetchTimezoneData(cityNum + 1);
     }
 
@@ -122,6 +146,8 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
      */
     function parseAndSaveTimezoneData(cityNum as Number, data as Dictionary) as Void {
         try {
+            System.println("BACKGROUND: Parsing City" + cityNum + " data...");
+
             // Get timezone ID and label from properties
             var zoneKey = "City" + cityNum.toString() + "Zone";
             var labelKey = "City" + cityNum.toString() + "Label";
@@ -130,11 +156,13 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
             var label = Properties.getValue(labelKey);
 
             if (zoneId == null || !(zoneId instanceof Number)) {
+                System.println("BACKGROUND: ERROR - Invalid zone ID");
                 return;
             }
 
             // Convert numeric ID to timezone string
             var zoneStr = getTimezoneString(zoneId as Number);
+            System.println("BACKGROUND: Timezone: " + zoneStr);
 
             if (label == null || !(label instanceof String)) {
                 label = "";
@@ -148,6 +176,8 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
             var rawOffset = data.get("raw_offset");
             var dstOffset = data.get("dst_offset");
 
+            System.println("BACKGROUND: raw_offset=" + rawOffset + ", dst_offset=" + dstOffset);
+
             if (rawOffset != null && rawOffset instanceof Number) {
                 info.offset = rawOffset;
             } else {
@@ -160,6 +190,8 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
             } else {
                 info.dst = false;
             }
+
+            System.println("BACKGROUND: Total offset=" + info.offset + " seconds, DST=" + info.dst);
 
             // Try to parse next DST transition time
             // WorldTimeAPI may include dst_until or dst_from
@@ -178,10 +210,15 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
             // Mark update time
             info.lastUpdate = Time.now().value().toLong();
 
+            System.println("BACKGROUND: Saving timezone data to storage...");
             // Save to storage
             TimezoneDataManager.saveTimezoneInfo(cityNum, info);
 
+            System.println("BACKGROUND: City" + cityNum + " data saved successfully!");
+
         } catch (e) {
+            System.println("BACKGROUND: ERROR parsing data!");
+            System.println("BACKGROUND: Error: " + e.getErrorMessage());
             // Parsing failed, keep old data
         }
     }
