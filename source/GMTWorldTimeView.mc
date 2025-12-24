@@ -42,6 +42,12 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
     private var zone3 as Number = 4;   // Default: New York
     private var zone4 as Number = 7;   // Default: Los Angeles
 
+    // Custom zone labels (loaded from properties, max 3 chars)
+    private var zone1Label as String = "LON";
+    private var zone2Label as String = "HKG";
+    private var zone3Label as String = "NYC";
+    private var zone4Label as String = "LAX";
+
     /**
      * Constructor
      */
@@ -67,6 +73,35 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
 
             var z4 = Properties.getValue("Zone4");
             if (z4 != null) { zone4 = z4 as Number; }
+
+            // Load custom labels (fall back to TzHelper abbreviation if empty)
+            var label1 = Properties.getValue("Zone1Label");
+            if (label1 != null && label1 != "") {
+                zone1Label = label1 as String;
+            } else {
+                zone1Label = TzHelper.getCityAbbr(zone1);
+            }
+
+            var label2 = Properties.getValue("Zone2Label");
+            if (label2 != null && label2 != "") {
+                zone2Label = label2 as String;
+            } else {
+                zone2Label = TzHelper.getCityAbbr(zone2);
+            }
+
+            var label3 = Properties.getValue("Zone3Label");
+            if (label3 != null && label3 != "") {
+                zone3Label = label3 as String;
+            } else {
+                zone3Label = TzHelper.getCityAbbr(zone3);
+            }
+
+            var label4 = Properties.getValue("Zone4Label");
+            if (label4 != null && label4 != "") {
+                zone4Label = label4 as String;
+            } else {
+                zone4Label = TzHelper.getCityAbbr(zone4);
+            }
         } catch (e) {
             // Use defaults if properties fail to load
         }
@@ -186,12 +221,9 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
 
         var spacing = screenWidth * 0.25;
 
-        // Get city abbreviations from TzHelper
-        var label1 = TzHelper.getCityAbbr(zone1);
-        var label2 = TzHelper.getCityAbbr(zone2);
-
-        drawWorldTimeItem(dc, centerX - spacing.toNumber(), y, label1, hour1);
-        drawWorldTimeItem(dc, centerX + spacing.toNumber(), y, label2, hour2);
+        // Use custom labels loaded from settings
+        drawWorldTimeItem(dc, centerX - spacing.toNumber(), y, zone1Label, hour1);
+        drawWorldTimeItem(dc, centerX + spacing.toNumber(), y, zone2Label, hour2);
     }
 
     /**
@@ -210,12 +242,9 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
 
         var spacing = screenWidth * 0.25;
 
-        // Get city abbreviations from TzHelper
-        var label3 = TzHelper.getCityAbbr(zone3);
-        var label4 = TzHelper.getCityAbbr(zone4);
-
-        drawWorldTimeItem(dc, centerX - spacing.toNumber(), y, label3, hour3);
-        drawWorldTimeItem(dc, centerX + spacing.toNumber(), y, label4, hour4);
+        // Use custom labels loaded from settings
+        drawWorldTimeItem(dc, centerX - spacing.toNumber(), y, zone3Label, hour3);
+        drawWorldTimeItem(dc, centerX + spacing.toNumber(), y, zone4Label, hour4);
     }
 
     /**
