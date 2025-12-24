@@ -9,13 +9,17 @@
 <properties>
     <!-- Zone 1 (Top Left) - Default: London (ID 0) -->
     <property id="Zone1" type="number">0</property>
+    <property id="Zone1Label" type="string">LON</property>
 
     <!-- Zone 2 (Top Right) - Default: Hong Kong (ID 13) -->
     <property id="Zone2" type="number">13</property>
+    <property id="Zone2Label" type="string">HKG</property>
 
     <!-- Zone 3 (Bottom Left) - Default: New York (ID 4) -->
     <property id="Zone3" type="number">4</property>
+    <property id="Zone3Label" type="string">NYC</property>
 
     <!-- Zone 4 (Bottom Right) - Default: Los Angeles (ID 7) -->
     <property id="Zone4" type="number">7</property>
+    <property id="Zone4Label" type="string">LAX</property>
 </properties>

@@ -6,8 +6,15 @@
     <string id="AppName">GMT World Time</string>
 
     <!-- Zone Settings with Embedded Timezone Rules -->
-    <string id="Zone1Title">Zone 1 (Top Left)</string>
-    <string id="Zone2Title">Zone 2 (Top Right)</string>
-    <string id="Zone3Title">Zone 3 (Bottom Left)</string>
-    <string id="Zone4Title">Zone 4 (Bottom Right)</string>
+    <string id="Zone1Title">Zone 1 City (Top Left)</string>
+    <string id="Zone1LabelTitle">Zone 1 Label (3 chars)</string>
+
+    <string id="Zone2Title">Zone 2 City (Top Right)</string>
+    <string id="Zone2LabelTitle">Zone 2 Label (3 chars)</string>
+
+    <string id="Zone3Title">Zone 3 City (Bottom Left)</string>
+    <string id="Zone3LabelTitle">Zone 3 Label (3 chars)</string>
+
+    <string id="Zone4Title">Zone 4 City (Bottom Right)</string>
+    <string id="Zone4LabelTitle">Zone 4 Label (3 chars)</string>
 </strings>
