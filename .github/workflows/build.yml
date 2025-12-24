@@ -210,24 +210,26 @@ jobs:
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder:sha-${SHORT_SHA}"
 
-          # Generate .der from existing .pem key or create new one
+          # Use the pre-generated key from Docker image (same key as main branch)
           docker run --rm \
             -v "$(pwd):/workspace" \
             -w /workspace \
             "$IMAGE_TAG" \
             bash -c "
-              # Use existing PEM key from repo, or generate new one if missing
-              if [ -f /workspace/developer_key_temp.pem ]; then
-                echo 'Converting existing developer_key_temp.pem to DER format...'
-                openssl pkcs8 -topk8 -inform PEM -outform DER -in /workspace/developer_key_temp.pem -out /workspace/developer_key.der -nocrypt
-              elif [ ! -f /workspace/developer_key.der ]; then
-                echo 'Generating new developer key...'
-                openssl genrsa -out /workspace/developer_key.pem 4096
-                openssl pkcs8 -topk8 -inform PEM -outform DER -in /workspace/developer_key.pem -out /workspace/developer_key.der -nocrypt
+              # Use the pre-generated key from Docker image at /root/.garmin-keys/
+              # This is the same key used by the main branch and for store submissions
+              if [ -f /root/.garmin-keys/developer_key.der ]; then
+                echo 'Using pre-generated developer key from Docker image (matches main branch)...'
+                KEY_PATH=/root/.garmin-keys/developer_key.der
+              else
+                echo 'Pre-generated key not found, generating temporary key...'
+                openssl genrsa -out /tmp/developer_key.pem 4096
+                openssl pkcs8 -topk8 -inform PEM -outform DER -in /tmp/developer_key.pem -out /tmp/developer_key.der -nocrypt
+                KEY_PATH=/tmp/developer_key.der
               fi
 
               # Export the store package
-              monkeyc -e -o bin/GMTWorldTime.iq -y /workspace/developer_key.der -f monkey.jungle -w
+              monkeyc -e -o /workspace/bin/GMTWorldTime.iq -y \$KEY_PATH -f /workspace/monkey.jungle -w
             "
 
           # Verify export
