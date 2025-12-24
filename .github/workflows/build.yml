@@ -210,15 +210,18 @@ jobs:
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/garmin-watchface/builder:sha-${SHORT_SHA}"
 
-          # First generate the key, then export the package
+          # Generate .der from existing .pem key or create new one
           docker run --rm \
             -v "$(pwd):/workspace" \
             -w /workspace \
             "$IMAGE_TAG" \
             bash -c "
-              # Generate developer key if it doesn't exist
-              if [ ! -f /workspace/developer_key.der ]; then
-                echo 'Generating developer key...'
+              # Use existing PEM key from repo, or generate new one if missing
+              if [ -f /workspace/developer_key_temp.pem ]; then
+                echo 'Converting existing developer_key_temp.pem to DER format...'
+                openssl pkcs8 -topk8 -inform PEM -outform DER -in /workspace/developer_key_temp.pem -out /workspace/developer_key.der -nocrypt
+              elif [ ! -f /workspace/developer_key.der ]; then
+                echo 'Generating new developer key...'
                 openssl genrsa -out /workspace/developer_key.pem 4096
                 openssl pkcs8 -topk8 -inform PEM -outform DER -in /workspace/developer_key.pem -out /workspace/developer_key.der -nocrypt
               fi
