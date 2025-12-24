@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <!-- Garmin Connect IQ Manifest - GMT World Time Watchface -->
 <iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
-    <iq:application entry="GMTWorldTimeApp" 
-                    id="a3421bee-d798-4dc2-a7c5-5a9b4d7e1234" 
+    <iq:application entry="GMTWorldTimeApp"
+                    id="457d25ce-79ec-4027-8f6f-3748711b449f"
                     launcherIcon="@Drawables.LauncherIcon"
                     minApiLevel="3.1.0"
-                    name="@Strings.AppName" 
+                    name="@Strings.AppName"
                     type="watchface"
                     version="1.0.0">
         
