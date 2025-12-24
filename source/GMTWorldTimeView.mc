@@ -35,22 +35,18 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
     private var centerX as Number = 0;
     private var centerY as Number = 0;
 
-    // City settings (loaded from properties)
-    private var city1Label as String = "LN";
-    private var city1Offset as Number = 0;
-    private var city1DST as Boolean = false;
-    
-    private var city2Label as String = "HK";
-    private var city2Offset as Number = 8;
-    private var city2DST as Boolean = false;
-    
-    private var city3Label as String = "NY";
-    private var city3Offset as Number = -5;
-    private var city3DST as Boolean = false;
-    
-    private var city4Label as String = "SF";
-    private var city4Offset as Number = -8;
-    private var city4DST as Boolean = false;
+    // Zone settings (loaded from properties)
+    // Each zone is a city ID (0-20) that maps to embedded timezone rules
+    private var zone1 as Number = 0;   // Default: London
+    private var zone2 as Number = 13;  // Default: Hong Kong
+    private var zone3 as Number = 4;   // Default: New York
+    private var zone4 as Number = 7;   // Default: Los Angeles
+
+    // Custom zone labels (loaded from properties, max 3 chars)
+    private var zone1Label as String = "LON";
+    private var zone2Label as String = "HKG";
+    private var zone3Label as String = "NYC";
+    private var zone4Label as String = "LAX";
 
     /**
      * Constructor
@@ -61,41 +57,51 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
     }
 
     /**
-     * Load city settings from properties
+     * Load zone settings from properties
      */
     function loadSettings() as Void {
         try {
-            // City 1
-            var label1 = Properties.getValue("City1Label");
-            if (label1 != null) { city1Label = label1 as String; }
-            var offset1 = Properties.getValue("City1Offset");
-            if (offset1 != null) { city1Offset = offset1 as Number; }
-            var dst1 = Properties.getValue("City1DST");
-            if (dst1 != null) { city1DST = dst1 as Boolean; }
-            
-            // City 2
-            var label2 = Properties.getValue("City2Label");
-            if (label2 != null) { city2Label = label2 as String; }
-            var offset2 = Properties.getValue("City2Offset");
-            if (offset2 != null) { city2Offset = offset2 as Number; }
-            var dst2 = Properties.getValue("City2DST");
-            if (dst2 != null) { city2DST = dst2 as Boolean; }
-            
-            // City 3
-            var label3 = Properties.getValue("City3Label");
-            if (label3 != null) { city3Label = label3 as String; }
-            var offset3 = Properties.getValue("City3Offset");
-            if (offset3 != null) { city3Offset = offset3 as Number; }
-            var dst3 = Properties.getValue("City3DST");
-            if (dst3 != null) { city3DST = dst3 as Boolean; }
-            
-            // City 4
-            var label4 = Properties.getValue("City4Label");
-            if (label4 != null) { city4Label = label4 as String; }
-            var offset4 = Properties.getValue("City4Offset");
-            if (offset4 != null) { city4Offset = offset4 as Number; }
-            var dst4 = Properties.getValue("City4DST");
-            if (dst4 != null) { city4DST = dst4 as Boolean; }
+            // Load zone IDs (integers 0-20)
+            var z1 = Properties.getValue("Zone1");
+            if (z1 != null) { zone1 = z1 as Number; }
+
+            var z2 = Properties.getValue("Zone2");
+            if (z2 != null) { zone2 = z2 as Number; }
+
+            var z3 = Properties.getValue("Zone3");
+            if (z3 != null) { zone3 = z3 as Number; }
+
+            var z4 = Properties.getValue("Zone4");
+            if (z4 != null) { zone4 = z4 as Number; }
+
+            // Load custom labels (fall back to TzHelper abbreviation if empty)
+            var label1 = Properties.getValue("Zone1Label");
+            if (label1 != null && label1 != "") {
+                zone1Label = label1 as String;
+            } else {
+                zone1Label = TzHelper.getCityAbbr(zone1);
+            }
+
+            var label2 = Properties.getValue("Zone2Label");
+            if (label2 != null && label2 != "") {
+                zone2Label = label2 as String;
+            } else {
+                zone2Label = TzHelper.getCityAbbr(zone2);
+            }
+
+            var label3 = Properties.getValue("Zone3Label");
+            if (label3 != null && label3 != "") {
+                zone3Label = label3 as String;
+            } else {
+                zone3Label = TzHelper.getCityAbbr(zone3);
+            }
+
+            var label4 = Properties.getValue("Zone4Label");
+            if (label4 != null && label4 != "") {
+                zone4Label = label4 as String;
+            } else {
+                zone4Label = TzHelper.getCityAbbr(zone4);
+            }
         } catch (e) {
             // Use defaults if properties fail to load
         }
@@ -200,43 +206,45 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
     }
 
     /**
-     * Draw the top row of world times (City 1, City 2)
+     * Draw the top row of world times (Zone 1, Zone 2)
      * @param dc Device context
      * @param clockTime Current system clock time
      * @param y Vertical position
      */
     private function drawWorldTimesTop(dc as Dc, clockTime as System.ClockTime, y as Number) as Void {
-        // Calculate offsets in seconds, add 1 hour if DST is active
-        var offset1Seconds = city1Offset * 3600 + (city1DST ? 3600 : 0);
-        var offset2Seconds = city2Offset * 3600 + (city2DST ? 3600 : 0);
-        
+        // Get timezone offsets from TzHelper (includes automatic DST calculation)
+        var offset1Seconds = TzHelper.getCurrentOffset(zone1);
+        var offset2Seconds = TzHelper.getCurrentOffset(zone2);
+
         var hour1 = getWorldTimeHour(clockTime, offset1Seconds);
         var hour2 = getWorldTimeHour(clockTime, offset2Seconds);
-        
+
         var spacing = screenWidth * 0.25;
-        
-        drawWorldTimeItem(dc, centerX - spacing.toNumber(), y, city1Label, hour1);
-        drawWorldTimeItem(dc, centerX + spacing.toNumber(), y, city2Label, hour2);
+
+        // Use custom labels loaded from settings
+        drawWorldTimeItem(dc, centerX - spacing.toNumber(), y, zone1Label, hour1);
+        drawWorldTimeItem(dc, centerX + spacing.toNumber(), y, zone2Label, hour2);
     }
 
     /**
-     * Draw the bottom row of world times (City 3, City 4)
+     * Draw the bottom row of world times (Zone 3, Zone 4)
      * @param dc Device context
      * @param clockTime Current system clock time
      * @param y Vertical position
      */
     private function drawWorldTimesBottom(dc as Dc, clockTime as System.ClockTime, y as Number) as Void {
-        // Calculate offsets in seconds, add 1 hour if DST is active
-        var offset3Seconds = city3Offset * 3600 + (city3DST ? 3600 : 0);
-        var offset4Seconds = city4Offset * 3600 + (city4DST ? 3600 : 0);
-        
+        // Get timezone offsets from TzHelper (includes automatic DST calculation)
+        var offset3Seconds = TzHelper.getCurrentOffset(zone3);
+        var offset4Seconds = TzHelper.getCurrentOffset(zone4);
+
         var hour3 = getWorldTimeHour(clockTime, offset3Seconds);
         var hour4 = getWorldTimeHour(clockTime, offset4Seconds);
-        
+
         var spacing = screenWidth * 0.25;
-        
-        drawWorldTimeItem(dc, centerX - spacing.toNumber(), y, city3Label, hour3);
-        drawWorldTimeItem(dc, centerX + spacing.toNumber(), y, city4Label, hour4);
+
+        // Use custom labels loaded from settings
+        drawWorldTimeItem(dc, centerX - spacing.toNumber(), y, zone3Label, hour3);
+        drawWorldTimeItem(dc, centerX + spacing.toNumber(), y, zone4Label, hour4);
     }
 
     /**

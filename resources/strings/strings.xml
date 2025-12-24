@@ -4,24 +4,17 @@
 -->
 <strings>
     <string id="AppName">GMT World Time</string>
-    
-    <!-- City 1 Settings (Top Left) -->
-    <string id="City1LabelTitle">City 1 Abbreviation</string>
-    <string id="City1OffsetTitle">City 1 GMT Offset (hours)</string>
-    <string id="City1DSTTitle">City 1 Currently in DST</string>
-    
-    <!-- City 2 Settings (Top Right) -->
-    <string id="City2LabelTitle">City 2 Abbreviation</string>
-    <string id="City2OffsetTitle">City 2 GMT Offset (hours)</string>
-    <string id="City2DSTTitle">City 2 Currently in DST</string>
-    
-    <!-- City 3 Settings (Bottom Left) -->
-    <string id="City3LabelTitle">City 3 Abbreviation</string>
-    <string id="City3OffsetTitle">City 3 GMT Offset (hours)</string>
-    <string id="City3DSTTitle">City 3 Currently in DST</string>
-    
-    <!-- City 4 Settings (Bottom Right) -->
-    <string id="City4LabelTitle">City 4 Abbreviation</string>
-    <string id="City4OffsetTitle">City 4 GMT Offset (hours)</string>
-    <string id="City4DSTTitle">City 4 Currently in DST</string>
+
+    <!-- Zone Settings with Embedded Timezone Rules -->
+    <string id="Zone1Title">Zone 1 City (Top Left)</string>
+    <string id="Zone1LabelTitle">Zone 1 Label (3 chars)</string>
+
+    <string id="Zone2Title">Zone 2 City (Top Right)</string>
+    <string id="Zone2LabelTitle">Zone 2 Label (3 chars)</string>
+
+    <string id="Zone3Title">Zone 3 City (Bottom Left)</string>
+    <string id="Zone3LabelTitle">Zone 3 Label (3 chars)</string>
+
+    <string id="Zone4Title">Zone 4 City (Bottom Right)</string>
+    <string id="Zone4LabelTitle">Zone 4 Label (3 chars)</string>
 </strings>

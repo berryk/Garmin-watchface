@@ -2,49 +2,128 @@
 <!--
     Connect IQ Settings for GMT World Time Watchface
     These settings appear in Garmin Connect Mobile app
+
+    Now using embedded timezone rules - no API calls needed!
+    Each zone is a city ID that maps to a timezone with automatic DST calculation.
 -->
 <settings>
-    <!-- City 1 Settings (Top Left) -->
-    <setting propertyKey="@Properties.City1Label" title="@Strings.City1LabelTitle">
+    <!-- Zone 1 (Top Left) -->
+    <setting propertyKey="@Properties.Zone1" title="@Strings.Zone1Title">
+        <settingConfig type="list">
+            <listEntry value="0">London</listEntry>
+            <listEntry value="1">Paris</listEntry>
+            <listEntry value="2">Berlin</listEntry>
+            <listEntry value="3">Moscow</listEntry>
+            <listEntry value="4">New York</listEntry>
+            <listEntry value="5">Chicago</listEntry>
+            <listEntry value="6">Denver</listEntry>
+            <listEntry value="7">Los Angeles</listEntry>
+            <listEntry value="8">Mexico City</listEntry>
+            <listEntry value="9">São Paulo</listEntry>
+            <listEntry value="10">Dubai</listEntry>
+            <listEntry value="11">Kolkata</listEntry>
+            <listEntry value="12">Singapore</listEntry>
+            <listEntry value="13">Hong Kong</listEntry>
+            <listEntry value="14">Tokyo</listEntry>
+            <listEntry value="15">Shanghai</listEntry>
+            <listEntry value="16">Sydney</listEntry>
+            <listEntry value="17">Auckland</listEntry>
+            <listEntry value="18">Honolulu</listEntry>
+            <listEntry value="19">Johannesburg</listEntry>
+            <listEntry value="20">Vienna</listEntry>
+        </settingConfig>
+    </setting>
+    <setting propertyKey="@Properties.Zone1Label" title="@Strings.Zone1LabelTitle">
         <settingConfig type="alphaNumeric" maxLength="3" />
-    </setting>
-    <setting propertyKey="@Properties.City1Offset" title="@Strings.City1OffsetTitle">
-        <settingConfig type="numeric" min="-12" max="14" />
-    </setting>
-    <setting propertyKey="@Properties.City1DST" title="@Strings.City1DSTTitle">
-        <settingConfig type="boolean" />
     </setting>
 
-    <!-- City 2 Settings (Top Right) -->
-    <setting propertyKey="@Properties.City2Label" title="@Strings.City2LabelTitle">
+    <!-- Zone 2 (Top Right) -->
+    <setting propertyKey="@Properties.Zone2" title="@Strings.Zone2Title">
+        <settingConfig type="list">
+            <listEntry value="0">London</listEntry>
+            <listEntry value="1">Paris</listEntry>
+            <listEntry value="2">Berlin</listEntry>
+            <listEntry value="3">Moscow</listEntry>
+            <listEntry value="4">New York</listEntry>
+            <listEntry value="5">Chicago</listEntry>
+            <listEntry value="6">Denver</listEntry>
+            <listEntry value="7">Los Angeles</listEntry>
+            <listEntry value="8">Mexico City</listEntry>
+            <listEntry value="9">São Paulo</listEntry>
+            <listEntry value="10">Dubai</listEntry>
+            <listEntry value="11">Kolkata</listEntry>
+            <listEntry value="12">Singapore</listEntry>
+            <listEntry value="13">Hong Kong</listEntry>
+            <listEntry value="14">Tokyo</listEntry>
+            <listEntry value="15">Shanghai</listEntry>
+            <listEntry value="16">Sydney</listEntry>
+            <listEntry value="17">Auckland</listEntry>
+            <listEntry value="18">Honolulu</listEntry>
+            <listEntry value="19">Johannesburg</listEntry>
+            <listEntry value="20">Vienna</listEntry>
+        </settingConfig>
+    </setting>
+    <setting propertyKey="@Properties.Zone2Label" title="@Strings.Zone2LabelTitle">
         <settingConfig type="alphaNumeric" maxLength="3" />
-    </setting>
-    <setting propertyKey="@Properties.City2Offset" title="@Strings.City2OffsetTitle">
-        <settingConfig type="numeric" min="-12" max="14" />
-    </setting>
-    <setting propertyKey="@Properties.City2DST" title="@Strings.City2DSTTitle">
-        <settingConfig type="boolean" />
     </setting>
 
-    <!-- City 3 Settings (Bottom Left) -->
-    <setting propertyKey="@Properties.City3Label" title="@Strings.City3LabelTitle">
+    <!-- Zone 3 (Bottom Left) -->
+    <setting propertyKey="@Properties.Zone3" title="@Strings.Zone3Title">
+        <settingConfig type="list">
+            <listEntry value="0">London</listEntry>
+            <listEntry value="1">Paris</listEntry>
+            <listEntry value="2">Berlin</listEntry>
+            <listEntry value="3">Moscow</listEntry>
+            <listEntry value="4">New York</listEntry>
+            <listEntry value="5">Chicago</listEntry>
+            <listEntry value="6">Denver</listEntry>
+            <listEntry value="7">Los Angeles</listEntry>
+            <listEntry value="8">Mexico City</listEntry>
+            <listEntry value="9">São Paulo</listEntry>
+            <listEntry value="10">Dubai</listEntry>
+            <listEntry value="11">Kolkata</listEntry>
+            <listEntry value="12">Singapore</listEntry>
+            <listEntry value="13">Hong Kong</listEntry>
+            <listEntry value="14">Tokyo</listEntry>
+            <listEntry value="15">Shanghai</listEntry>
+            <listEntry value="16">Sydney</listEntry>
+            <listEntry value="17">Auckland</listEntry>
+            <listEntry value="18">Honolulu</listEntry>
+            <listEntry value="19">Johannesburg</listEntry>
+            <listEntry value="20">Vienna</listEntry>
+        </settingConfig>
+    </setting>
+    <setting propertyKey="@Properties.Zone3Label" title="@Strings.Zone3LabelTitle">
         <settingConfig type="alphaNumeric" maxLength="3" />
-    </setting>
-    <setting propertyKey="@Properties.City3Offset" title="@Strings.City3OffsetTitle">
-        <settingConfig type="numeric" min="-12" max="14" />
-    </setting>
-    <setting propertyKey="@Properties.City3DST" title="@Strings.City3DSTTitle">
-        <settingConfig type="boolean" />
     </setting>
 
-    <!-- City 4 Settings (Bottom Right) -->
-    <setting propertyKey="@Properties.City4Label" title="@Strings.City4LabelTitle">
+    <!-- Zone 4 (Bottom Right) -->
+    <setting propertyKey="@Properties.Zone4" title="@Strings.Zone4Title">
+        <settingConfig type="list">
+            <listEntry value="0">London</listEntry>
+            <listEntry value="1">Paris</listEntry>
+            <listEntry value="2">Berlin</listEntry>
+            <listEntry value="3">Moscow</listEntry>
+            <listEntry value="4">New York</listEntry>
+            <listEntry value="5">Chicago</listEntry>
+            <listEntry value="6">Denver</listEntry>
+            <listEntry value="7">Los Angeles</listEntry>
+            <listEntry value="8">Mexico City</listEntry>
+            <listEntry value="9">São Paulo</listEntry>
+            <listEntry value="10">Dubai</listEntry>
+            <listEntry value="11">Kolkata</listEntry>
+            <listEntry value="12">Singapore</listEntry>
+            <listEntry value="13">Hong Kong</listEntry>
+            <listEntry value="14">Tokyo</listEntry>
+            <listEntry value="15">Shanghai</listEntry>
+            <listEntry value="16">Sydney</listEntry>
+            <listEntry value="17">Auckland</listEntry>
+            <listEntry value="18">Honolulu</listEntry>
+            <listEntry value="19">Johannesburg</listEntry>
+            <listEntry value="20">Vienna</listEntry>
+        </settingConfig>
+    </setting>
+    <setting propertyKey="@Properties.Zone4Label" title="@Strings.Zone4LabelTitle">
         <settingConfig type="alphaNumeric" maxLength="3" />
-    </setting>
-    <setting propertyKey="@Properties.City4Offset" title="@Strings.City4OffsetTitle">
-        <settingConfig type="numeric" min="-12" max="14" />
-    </setting>
-    <setting propertyKey="@Properties.City4DST" title="@Strings.City4DSTTitle">
-        <settingConfig type="boolean" />
     </setting>
 </settings>

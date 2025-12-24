@@ -116,7 +116,7 @@ build_watchface() {
     echo "SDK_PATH: $SDK_PATH"
     echo "DEVICES_PATH: $DEVICES_PATH"
 
-    # Build the watchface
+    # Build the watchface (.prg file for device)
     OUTPUT_FILE="bin/GMTWorldTime-${DEVICE}.prg"
 
     java -jar "$MONKEYBRAINS" \
@@ -143,6 +143,47 @@ build_watchface() {
     else
         echo -e "${RED}✗${NC} Build failed for $DEVICE"
         exit 1
+    fi
+}
+
+# Function to export IQ package for store submission (multi-device package)
+export_iq_package() {
+    cd "$WORKSPACE"
+    mkdir -p bin
+
+    echo "Exporting multi-device IQ package for Connect IQ Store..."
+    echo "This package will include all devices listed in manifest.xml"
+
+    # Find monkeybrains.jar
+    MONKEYBRAINS="$SDK_PATH/bin/monkeybrains.jar"
+
+    if [ ! -f "$MONKEYBRAINS" ]; then
+        echo -e "${RED}✗${NC} monkeybrains.jar not found at $MONKEYBRAINS"
+        exit 1
+    fi
+
+    # Export IQ package (.iq file for store submission)
+    # The -e flag means "export for store" (creates .iq instead of .prg)
+    # NO -d flag: builds for ALL devices in manifest.xml
+    IQ_OUTPUT_FILE="bin/GMTWorldTime.iq"
+
+    java -jar "$MONKEYBRAINS" \
+        -e \
+        -o "$IQ_OUTPUT_FILE" \
+        -f monkey.jungle \
+        -y developer_key.der \
+        -w 2>&1 || {
+            echo -e "${YELLOW}⚠${NC} IQ export failed (non-critical)"
+            return 0
+        }
+
+    # Check if export succeeded
+    if [ -f "$IQ_OUTPUT_FILE" ]; then
+        SIZE=$(ls -lh "$IQ_OUTPUT_FILE" | awk '{print $5}')
+        echo -e "${GREEN}✓${NC} Multi-device IQ package exported: $IQ_OUTPUT_FILE ($SIZE)"
+        echo "Package includes all 16 devices from manifest.xml"
+    else
+        echo -e "${YELLOW}⚠${NC} IQ package not created"
     fi
 }
 
@@ -335,7 +376,7 @@ main() {
     echo "========================================"
 
     # Show results
-    if [ -f "bin/GMTWorkTime-${DEVICE}.prg" ]; then
+    if [ -f "bin/GMTWorldTime-${DEVICE}.prg" ]; then
         echo "PRG file: bin/GMTWorldTime-${DEVICE}.prg"
     fi
 
