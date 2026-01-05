@@ -158,6 +158,34 @@ The Docker build automatically:
 - Sets up all required dependencies
 - Generates developer key for signing
 
+### Using Development Containers (Codespaces/VS Code)
+
+The easiest way to get started with a fully configured development environment is using the devcontainer, which provides the exact same environment as GitHub Actions.
+
+**GitHub Codespaces (Cloud Development):**
+1. Click the green "Code" button on GitHub
+2. Select "Codespaces" tab
+3. Click "Create codespace on [branch]"
+4. Wait for the container to build (~5-10 minutes first time)
+5. Start building immediately with `./scripts/build-in-docker.sh`
+
+**Local VS Code with Dev Containers:**
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop)
+2. Install the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+3. Open this repository in VS Code
+4. Click "Reopen in Container" when prompted
+5. VS Code will build and connect to the container
+
+**Benefits:**
+- ✅ Same environment as GitHub Actions builds
+- ✅ SDK, Java, and all tools pre-installed
+- ✅ Pre-generated developer key included
+- ✅ Garmin Monkey C extension pre-configured
+- ✅ No local SDK installation needed
+- ✅ Works on Windows, Mac, and Linux
+
+See [`.devcontainer/README.md`](.devcontainer/README.md) for detailed setup instructions and configuration options.
+
 ## Testing in Simulator
 
 ### Using VS Code
