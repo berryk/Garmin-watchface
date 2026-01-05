@@ -1,0 +1,88 @@
+{
+  "name": "Garmin Connect IQ Development",
+
+  // Use pre-built image from GitHub Container Registry (built by GitHub Actions)
+  // This avoids Codespaces network restrictions during build
+  "image": "ghcr.io/berryk/garmin-watchface/builder:latest",
+
+  // Fallback: Build from Dockerfile if image pull fails
+  "build": {
+    "dockerfile": "../Dockerfile",
+    "context": "..",
+    "args": {
+      // Optional: Set these in Codespaces secrets or leave empty for fallback SDK download
+      // GARMIN_EMAIL and GARMIN_PASSWORD are only needed for automatic device downloads
+      // If not provided, the Dockerfile will use the fallback SDK download method
+      "GARMIN_EMAIL": "${localEnv:GARMIN_EMAIL}",
+      "GARMIN_PASSWORD": "${localEnv:GARMIN_PASSWORD}"
+    }
+  },
+
+  // Set environment variables to match GitHub Actions
+  // Note: PATH is already set correctly in the Dockerfile, so we don't override it here
+  "containerEnv": {
+    "GARMIN_HOME": "/root/.Garmin",
+    "CONNECTIQ_SDK_PATH": "/root/.Garmin/ConnectIQ/Sdks/sdk",
+    "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64",
+    "DISPLAY": ":99"
+  },
+
+  // Features to add to the container
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {
+      "version": "latest"
+    }
+  },
+
+  // Configure VS Code settings
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash",
+        "files.eol": "\n",
+        "editor.formatOnSave": false
+      },
+      "extensions": [
+        // Garmin Connect IQ extension for VS Code
+        "garmin.monkey-c",
+        // Additional useful extensions
+        "ms-vscode.makefile-tools",
+        "mhutchie.git-graph",
+        "eamodio.gitlens"
+      ]
+    }
+  },
+
+  // Forward ports if needed (for web-based tools, etc.)
+  "forwardPorts": [],
+
+  // Post-create command to verify setup
+  "postCreateCommand": "bash -c 'echo \"=== Garmin Connect IQ Development Environment ===\" && echo \"SDK Version: $(monkeyc --version 2>&1 | head -1 || echo \"Not available\")\" && echo \"Java Version: $(java -version 2>&1 | head -1)\" && echo \"Devices Available: $(ls ${GARMIN_HOME}/ConnectIQ/Devices 2>/dev/null | wc -l)\" && echo \"Developer Key: $([ -f /root/.garmin-keys/developer_key.der ] && echo \"✓ Pre-generated key available\" || echo \"✗ Key not found\")\" && echo \"\" && echo \"Ready to build! Try: ./scripts/build-in-docker.sh\" && echo \"Or use the Garmin Connect IQ extension in VS Code.\"'",
+
+  // Run commands after the container is created
+  "postStartCommand": "bash -c 'mkdir -p bin screenshots'",
+
+  // Mount the workspace
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "workspaceFolder": "/workspace",
+
+  // Run as root to match GitHub Actions environment
+  "remoteUser": "root",
+
+  // Container properties
+  "runArgs": [
+    // Required for X11/simulator
+    "--cap-add=SYS_PTRACE",
+    "--security-opt=seccomp=unconfined",
+    // Shared memory for X11
+    "--shm-size=2gb"
+  ],
+
+  // Lifecycle scripts
+  "initializeCommand": "echo 'Initializing Garmin Connect IQ devcontainer...'",
+
+  // Mount local .gitconfig if available
+  "mounts": [
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/root/.gitconfig,type=bind,consistency=cached"
+  ]
+}
