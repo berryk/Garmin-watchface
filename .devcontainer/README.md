@@ -15,11 +15,15 @@ This devcontainer provides a complete Garmin Connect IQ development environment 
 
 ### Option 1: GitHub Codespaces (Recommended)
 
+**Important**: The devcontainer now uses the pre-built Docker image from GitHub Container Registry (created by GitHub Actions) to avoid network restrictions in Codespaces.
+
 1. Click the green "Code" button on GitHub
 2. Select "Codespaces" tab
 3. Click "Create codespace on [branch]"
-4. Wait for the container to build (first time ~5-10 minutes)
+4. Wait for the container to pull and start (first time ~2-3 minutes)
 5. Start developing!
+
+**Note**: If you're creating a Codespace from a feature branch, make sure the branch has had a successful GitHub Actions build first, which will push the Docker image to GHCR.
 
 ### Option 2: Local Development with VS Code
 

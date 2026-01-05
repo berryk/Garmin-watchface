@@ -1,5 +1,11 @@
 {
   "name": "Garmin Connect IQ Development",
+
+  // Use pre-built image from GitHub Container Registry (built by GitHub Actions)
+  // This avoids Codespaces network restrictions during build
+  "image": "ghcr.io/berryk/garmin-watchface/builder:latest",
+
+  // Fallback: Build from Dockerfile if image pull fails
   "build": {
     "dockerfile": "../Dockerfile",
     "context": "..",
