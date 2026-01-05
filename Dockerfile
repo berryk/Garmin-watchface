@@ -70,6 +70,7 @@ RUN apt-get update && apt-get install -y \
 # Verified by strace showing successful load of libpng16.so.16
 
 # Install connect-iq-sdk-manager-cli for automated SDK/device management
+# Use a known stable version to avoid GitHub API rate limiting issues
 RUN set -ex && \
     ARCH="$(uname -m)" && \
     case "$ARCH" in \
@@ -77,7 +78,12 @@ RUN set -ex && \
         aarch64) DOWNLOAD_ARCH="ARM64" ;; \
         *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
     esac && \
-    LATEST_TAG=$(curl -s https://api.github.com/repos/lindell/connect-iq-sdk-manager-cli/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') && \
+    # Try to get latest version, fallback to known stable version if API fails
+    LATEST_TAG=$(curl -s https://api.github.com/repos/lindell/connect-iq-sdk-manager-cli/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "") && \
+    if [ -z "$LATEST_TAG" ]; then \
+        echo "GitHub API failed, using fallback version v1.2.1" && \
+        LATEST_TAG="v1.2.1"; \
+    fi && \
     LATEST_VERSION="${LATEST_TAG#v}" && \
     echo "Installing connect-iq-sdk-manager-cli ${LATEST_VERSION} for ${DOWNLOAD_ARCH}..." && \
     DOWNLOAD_URL="https://github.com/lindell/connect-iq-sdk-manager-cli/releases/download/${LATEST_TAG}/connect-iq-sdk-manager-cli_${LATEST_VERSION}_Linux_${DOWNLOAD_ARCH}.tar.gz" && \
