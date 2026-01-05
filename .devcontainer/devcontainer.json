@@ -13,11 +13,11 @@
   },
 
   // Set environment variables to match GitHub Actions
+  // Note: PATH is already set correctly in the Dockerfile, so we don't override it here
   "containerEnv": {
     "GARMIN_HOME": "/root/.Garmin",
     "CONNECTIQ_SDK_PATH": "/root/.Garmin/ConnectIQ/Sdks/sdk",
     "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64",
-    "PATH": "${containerEnv:CONNECTIQ_SDK_PATH}/bin:${containerEnv:JAVA_HOME}/bin:${containerEnv:PATH}",
     "DISPLAY": ":99"
   },
 
