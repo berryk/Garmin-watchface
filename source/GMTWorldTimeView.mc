@@ -132,6 +132,8 @@ class GMTWorldTimeView extends WatchUi.WatchFace {
      * @param dc Device context for drawing
      */
     function onUpdate(dc as Dc) as Void {
+        ComplicationCache.refresh();
+
         // Clear the screen with black background
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();

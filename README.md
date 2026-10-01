@@ -180,6 +180,17 @@ connectiq simulate -d fenix7 bin/GMTWorldTime.prg
 - **Activity**: Modify step count and other fitness data
 - **Low Power Mode**: Test how the watchface looks in sleep mode
 
+## Fitness reporter (optional)
+
+`source/FitnessReporter.mc` is a background task that POSTs fitness data to Keith's Fitness Dispatch
+receiver (github.com/berryk/garmin-sync, `server/`), through Garmin Connect's web proxy on the phone.
+It runs at the time the receiver asks for, at the configured wake time, and when an activity finishes.
+`ComplicationCache.mc` snapshots system complications from the view every 10 minutes for it.
+
+Reporting is **off** unless the hidden `ReportUrl` / `ReportToken` properties are set; the committed
+defaults are empty. `scripts/build-reporting.sh [device]` builds with them filled in from 1Password
+(on contabo-lon) into `~/data/garmin-watchface/`. Store and CI builds are unaffected.
+
 ## Installing on Your Watch
 
 ### Method 1: Via Garmin Express (Development Mode)
