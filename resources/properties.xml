@@ -22,4 +22,9 @@
     <!-- Zone 4 (Bottom Right) - Default: Los Angeles (ID 7) -->
     <property id="Zone4" type="number">7</property>
     <property id="Zone4Label" type="string">LAX</property>
+
+    <!-- Fitness reporter endpoint (hidden, no settings entry). Empty = reporting off.
+         scripts/build-reporting.sh fills these in at build time; never commit real values. -->
+    <property id="ReportUrl" type="string"></property>
+    <property id="ReportToken" type="string"></property>
 </properties>
