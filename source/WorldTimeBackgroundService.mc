@@ -33,6 +33,11 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
      * @param info Temporal event information
      */
     function onTemporalEvent() as Void {
+        System.println("########################################");
+        System.println("BACKGROUND: onTemporalEvent() triggered");
+        System.println("BACKGROUND: Starting timezone data fetch...");
+        System.println("########################################");
+        
         // Start fetching from City 1
         fetchTimezoneData(1);
     }
@@ -42,8 +47,12 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
      * @param cityNum City number (1-4)
      */
     function fetchTimezoneData(cityNum as Number) as Void {
+        System.println("BACKGROUND: fetchTimezoneData() called for City " + cityNum);
+        
         if (cityNum > 4) {
             // All cities processed, exit
+            System.println("BACKGROUND: All cities processed, exiting background service");
+            System.println("########################################");
             Background.exit(null);
             return;
         }
@@ -70,15 +79,20 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
 
         // Load existing data to check if refresh needed
         var info = TimezoneDataManager.loadTimezoneInfo(cityNum, zoneStr, label as String);
+        
+        System.println("BACKGROUND: City " + cityNum + " - isStale=" + info.isStale());
+        System.println("BACKGROUND: City " + cityNum + " - lastUpdate=" + info.lastUpdate);
 
         if (!info.isStale()) {
             // Data is still fresh, skip to next
+            System.println("BACKGROUND: City " + cityNum + " data is fresh, skipping fetch");
             fetchTimezoneData(cityNum + 1);
             return;
         }
 
         // Build API URL
         var url = "http://worldtimeapi.org/api/timezone/" + zoneStr;
+        System.println("BACKGROUND: Making API request to: " + url);
 
         // Store current city number for callback
         currentCityNum = cityNum;
@@ -104,10 +118,16 @@ class WorldTimeBackgroundService extends System.ServiceDelegate {
      */
     function onReceiveTimezoneData(responseCode as Number, data as Dictionary?) as Void {
         var cityNum = currentCityNum;
+        
+        System.println("BACKGROUND: API response received for City " + cityNum);
+        System.println("BACKGROUND: Response code: " + responseCode);
 
         if (responseCode == 200 && data != null) {
             // Parse response
+            System.println("BACKGROUND: Parsing and saving data for City " + cityNum);
             parseAndSaveTimezoneData(cityNum, data);
+        } else {
+            System.println("BACKGROUND: API call failed or returned no data");
         }
 
         // Continue to next city regardless of success/failure
